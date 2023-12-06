@@ -1,5 +1,5 @@
 {
-  "name": "fertilizer",
+  "name": "wait-for-it",
   "version": "1.0.0",
   "scripts": {
     "lint": "npx eslint .",
