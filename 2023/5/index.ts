@@ -106,7 +106,6 @@ function part2(): number {
                 }
             });
             process.env.DEBUG && console.debug(`${line} => ${seeds}`);
-            return 0;
         } else if (line.match(/^.+map:$/)) {
             let map = line.match(/^(\w+)-to-(\w+).+$/);
             if (map?.length !== 3) return; // invalid
