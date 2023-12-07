@@ -7,7 +7,7 @@
     "clean": "npx tsc --build --clean",
     "start": "npx ts-node index.ts"
   },
-  "author": "",
+  "author": "Kyle Colantonio",
   "license": "Apache-2.0",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.13.1",
