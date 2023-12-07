@@ -63,3 +63,6 @@ package-lock.json
 .eslintcache
 *v8.log
 /lib/
+
+# Advent of Code inputs
+**/data/*.txt
