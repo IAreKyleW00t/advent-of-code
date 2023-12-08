@@ -4,6 +4,7 @@ const FILE = fs.readFileSync("data/input.txt");
 
 interface Filter {
     to: string;
+    from: string;
     srcs: number[];
     dests: number[];
     ranges: number[];
@@ -23,17 +24,19 @@ function part1(): number {
         } else if (line.match(/^.+map:$/)) {
             let map = line.match(/^(\w+)-to-(\w+).+$/);
             if (map?.length !== 3) return; // invalid
+            const from = category;
 
             category = map[1];
             let to = map[2];
             maps[category] = {
                 to: to,
+                from: from,
                 srcs: [],
                 dests: [],
                 ranges: [],
                 offsets: [],
             };
-            process.env.DEBUG && console.debug(`${line} => ${category}:${to}`);
+            process.env.DEBUG && console.debug(`${line} => ${from}:${category}:${to}`);
         } else {
             let numbers = line.match(/\d+/g)?.map(num => parseInt(num));
             if (numbers?.length !== 3) return; // invalid
@@ -53,31 +56,31 @@ function part1(): number {
     seeds.forEach(seed => {
         category = Object.keys(maps)[0];
         let map = maps[category];
-        let src = seed;
+        let step = seed;
         while (map) {
             process.env.DEBUG && console.debug(`${category} => ${JSON.stringify(map)}`);
 
             let mapped;
             for (let i = 0; i < map.srcs.length; i++) {
-                if (src >= map.srcs[i] && src < (map.srcs[i] + map.ranges[i])) {
-                    process.env.DEBUG && console.debug(`  ${category}:${src} => ${map.to}:${src + map.offsets[i]}`)
-                    mapped = src + map.offsets[i];
+                if (step >= map.srcs[i] && step < (map.srcs[i] + map.ranges[i])) {
+                    process.env.DEBUG && console.debug(`  ${category}:${step} => ${map.to}:${step + map.offsets[i]}`)
+                    mapped = step + map.offsets[i];
                     break;
                 }
             }
-            if (mapped) src = mapped;
+            if (mapped) step = mapped;
     
             category = map.to;
             map = maps[category];
         }
 
-        locations.push(src); // add location
+        locations.push(step); // add location
     });
     process.env.DEBUG && console.debug(`locations => ${locations}`);
     return Math.min(...locations);
 }
 
-function part2(): bigint {
+function part2(): number {
     const seeds: { start: number, length: number }[] = [];
     let maps: { [key: string]: Filter } = {};
 
@@ -96,11 +99,13 @@ function part2(): bigint {
         } else if (line.match(/^.+map:$/)) {
             let map = line.match(/^(\w+)-to-(\w+).+$/);
             if (map?.length !== 3) return; // invalid
+            const from = category;
 
             category = map[1];
             let to = map[2];
             maps[category] = {
                 to: to,
+                from: from,
                 srcs: [],
                 dests: [],
                 ranges: [],
@@ -122,31 +127,35 @@ function part2(): bigint {
         }
     });
 
-    let min_location: bigint = BigInt(Number.MAX_SAFE_INTEGER);
-    seeds.forEach(set => {
-        process.env.DEBUG && console.debug(`seeds => ${set.start}...${set.start + set.length} (${set.length + 1} total seeds)`);
-        for (let len = 0; len < set.length; len++) {
-            category = Object.keys(maps)[0];
-            let map = maps[category];
-            let src: bigint = BigInt(set.start) + BigInt(len);
-            while (map) {
-                let mapped;
-                for (let i = 0; i < map.srcs.length; i++) {
-                    if (src >= BigInt(map.srcs[i]) && src < (BigInt(map.srcs[i]) + BigInt(map.ranges[i]))) {
-                        mapped = src + BigInt(map.offsets[i]);
-                        break;
-                    }
-                }
-                if (mapped) src = mapped;
+    // Similar to Part 1, but "bruteforce" in reverse from Location > ... > Seed
+    let location = -1;
+    for (let loc = 0; loc < Number.MAX_SAFE_INTEGER; loc++) {
+        category = Object.keys(maps).reverse()[0];
+        let map = maps[category];
+        let step = loc;
+        while (map) {
+            process.env.DEBUG && console.debug(`${category} => ${JSON.stringify(map)}`);
 
-                category = map.to;
-                map = maps[category];
+            let mapped;
+            for (let i = 0; i < map.dests.length; i++) {
+                if (step >= map.dests[i] && step < (map.dests[i] + map.ranges[i])) {
+                    process.env.DEBUG && console.debug(`  ${category}:${step} => ${map.from}:${map.srcs[i] + map.offsets[i]}`)
+                    mapped = map.srcs[i] + map.offsets[i];
+                    break;
+                }
             }
-            if (src < min_location) min_location = src;
-            if (len % 10000000 === 0 || len === set.length) process.env.DEBUG && console.debug(` i=${len}, min_location => ${min_location}`);
+            if (mapped) step = mapped;
+    
+            category = map.from;
+            map = maps[category];
         }
-    });
-    return min_location;
+        if (step !== loc) {
+            location = step;
+            break;
+        }
+        if (location !== -1) break;
+    }
+    return location;
 }
 
 const part1_out = part1();
