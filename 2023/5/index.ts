@@ -2,18 +2,17 @@ import * as fs from "fs";
 
 const FILE = fs.readFileSync("data/input.txt");
 
+interface Filter {
+    to: string;
+    srcs: number[];
+    dests: number[];
+    ranges: number[];
+    offsets: number[];
+}
+
 function part1(): number {
     let seeds: number[] = [];
-    let maps: {
-        [key: string]: {
-            to: string,
-            srcs: number[],
-            dests: number[],
-            ranges: number[],
-            offsets: number[],
-        }
-    } = {};
-
+    let maps: { [key: string]: Filter } = {};
     let category: string;
     FILE.toString().split(/\r?\n/).forEach(line => {
         if (!line) return; // skip empty lines
@@ -26,7 +25,7 @@ function part1(): number {
             if (map?.length !== 3) return; // invalid
 
             category = map[1];
-            let to = map[2]
+            let to = map[2];
             maps[category] = {
                 to: to,
                 srcs: [],
@@ -46,7 +45,7 @@ function part1(): number {
             maps[category].dests.push(dest)
             maps[category].ranges.push(range)
             maps[category].offsets.push(dest - src)
-            process.env.DEBUG && console.debug(`  + src = ${src}, dest = ${dest}, range = ${range}`)
+            process.env.DEBUG && console.debug(`  + { src = ${src}, dest = ${dest}, range = ${range} }`)
         }
     });
 
@@ -78,17 +77,9 @@ function part1(): number {
     return Math.min(...locations);
 }
 
-function part2(): number {
-    let seeds: number[] = [];
-    let maps: {
-        [key: string]: {
-            to: string,
-            srcs: number[],
-            dests: number[],
-            ranges: number[],
-            offsets: number[],
-        }
-    } = {};
+function part2(): bigint {
+    const seeds: { start: number, length: number }[] = [];
+    let maps: { [key: string]: Filter } = {};
 
     let category: string;
     FILE.toString().split(/\r?\n/).forEach(line => {
@@ -98,20 +89,16 @@ function part2(): number {
             line.match(/\d+\s+\d+/g)?.map(num => {
                 const split = num.split(/\s+/);
                 const start = parseInt(split[0]);
-                const length = parseInt(split[1]);
-
-                // TODO: Figure out large numbers
-                for (let i = start; i < start + length; i++) {
-                    seeds.push(i);
-                }
+                const length = parseInt(split[1]) - 1;
+                seeds.push({ start: start, length: length });
             });
-            process.env.DEBUG && console.debug(`${line} => ${seeds}`);
+            process.env.DEBUG && console.debug(`${line} => ${JSON.stringify(seeds)}`);
         } else if (line.match(/^.+map:$/)) {
             let map = line.match(/^(\w+)-to-(\w+).+$/);
             if (map?.length !== 3) return; // invalid
 
             category = map[1];
-            let to = map[2]
+            let to = map[2];
             maps[category] = {
                 to: to,
                 srcs: [],
@@ -131,37 +118,35 @@ function part2(): number {
             maps[category].dests.push(dest)
             maps[category].ranges.push(range)
             maps[category].offsets.push(dest - src)
-            process.env.DEBUG && console.debug(`  + src = ${src}, dest = ${dest}, range = ${range}`)
+            process.env.DEBUG && console.debug(`  + { src = ${src}, dest = ${dest}, range = ${range} }`)
         }
     });
 
-    let locations: number[] = [];
-    seeds.forEach(seed => {
-        category = Object.keys(maps)[0];
-        let map = maps[category];
-        let src = seed;
-        while (map) {
-            process.env.DEBUG && console.debug(`${category} => ${JSON.stringify(map)}`);
-
-            let mapped;
-            for (let i = 0; i < map.srcs.length; i++) {
-                if (src >= map.srcs[i] && src < (map.srcs[i] + map.ranges[i])) {
-                    process.env.DEBUG && console.debug(`  ${category}:${src} => ${map.to}:${src + map.offsets[i]}`)
-                    mapped = src + map.offsets[i];
-                    break;
+    let min_location: bigint = BigInt(Number.MAX_SAFE_INTEGER);
+    seeds.forEach(set => {
+        process.env.DEBUG && console.debug(`seeds => ${set.start}...${set.start + set.length} (${set.length + 1} total seeds)`);
+        for (let len = 0; len < set.length; len++) {
+            category = Object.keys(maps)[0];
+            let map = maps[category];
+            let src: bigint = BigInt(set.start) + BigInt(len);
+            while (map) {
+                let mapped;
+                for (let i = 0; i < map.srcs.length; i++) {
+                    if (src >= BigInt(map.srcs[i]) && src < (BigInt(map.srcs[i]) + BigInt(map.ranges[i]))) {
+                        mapped = src + BigInt(map.offsets[i]);
+                        break;
+                    }
                 }
+                if (mapped) src = mapped;
+
+                category = map.to;
+                map = maps[category];
             }
-            if (mapped) src = mapped;
-    
-            category = map.to;
-            map = maps[category];
+            if (src < min_location) min_location = src;
+            if (len % 10000000 === 0 || len === set.length) process.env.DEBUG && console.debug(` i=${len}, min_location => ${min_location}`);
         }
-
-        locations.push(src); // add location
     });
-    process.env.DEBUG && console.debug(`locations => ${locations}`);
-    return Math.min(...locations);
-
+    return min_location;
 }
 
 const part1_out = part1();
