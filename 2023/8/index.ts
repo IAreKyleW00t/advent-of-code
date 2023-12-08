@@ -23,6 +23,7 @@ function traverse(start: string, map: Map, steps: string[], end: Function): numb
     let node = start;
     let total: number = 0;
     let index: number = 0;
+    process.env.DEBUG && console.debug(` > ${node}`)
     while (node) {
         const step: string = steps[index];
         process.env.DEBUG && console.debug(`step => ${step}`);
@@ -58,6 +59,7 @@ function part1(): number {
             process.env.DEBUG && console.debug(`${matches[0]} => ${JSON.stringify(map[matches[0]])}`);
         }
     });
+    process.env.DEBUG && console.debug("-".repeat(80))
     return traverse("AAA", map, steps, (n: string) => n === "ZZZ");
 }
 
@@ -79,18 +81,15 @@ function part2(): number {
         }
     });
 
-    let nodes: string[] = Object.keys(map).filter(node => node.endsWith("A"));
     let distances: number[] = [];
-    nodes.forEach((node, i) => {
+    Object.keys(map).filter(node => node.endsWith("A")).forEach((node, i) => {
         distances[i] = traverse(node, map, steps, (n: string) => n.endsWith("Z"));
     });
+    process.env.DEBUG && console.debug("-".repeat(80))
     return distances.reduce((a, b) => lcm(a, b));
 }
 
 const part1_out = part1();
-process.env.DEBUG && console.debug("-".repeat(80))
 const part2_out = part2();
-process.env.DEBUG && console.debug("-".repeat(80))
-
 console.log(`Part 1: ${part1_out}`);
 console.log(`Part 2: ${part2_out}`);
