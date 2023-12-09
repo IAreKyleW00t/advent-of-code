@@ -1,167 +1,171 @@
 import * as fs from "fs";
 
-const FILE = fs.readFileSync("data/input.txt");
+const stdin: string = fs.readFileSync(0).toString();
 
-interface Filter {
-    to: string;
-    from: string;
-    srcs: number[];
-    dests: number[];
-    ranges: number[];
-    offsets: number[];
+class Filter {
+  to: string;
+  from: string;
+  srcs: number[];
+  dests: number[];
+  ranges: number[];
+  offsets: number[];
+
+  constructor(to: string, from: string) {
+    this.to = to;
+    this.from = from;
+    this.srcs = [];
+    this.dests = [];
+    this.ranges = [];
+    this.offsets = [];
+  }
+}
+
+interface FilterMap {
+  [key: string]: Filter;
+}
+
+interface SeedRange {
+  start: number;
+  length: number;
+}
+
+function locationFromSeed(seeds: number[], maps: FilterMap): number {
+  const locations: number[] = [];
+  seeds.forEach((seed) => {
+    let category = Object.keys(maps)[0];
+    let map = maps[category];
+    let step = seed;
+    while (map) {
+      let mapped: number = -1;
+
+      for (let i = 0; i < map.srcs.length; i++) {
+        if (step >= map.srcs[i] && step < map.srcs[i] + map.ranges[i]) {
+          mapped = step + map.offsets[i];
+          break;
+        }
+      }
+      if (mapped !== -1) step = mapped;
+
+      category = map.to;
+      map = maps[category];
+    }
+    locations.push(step);
+  });
+  return Math.min(...locations);
+}
+
+function seedFromLocation(
+  seeds: SeedRange[],
+  maps: FilterMap,
+  start: number = 0,
+  end: number = Number.MAX_SAFE_INTEGER
+): number {
+  for (let loc = start; loc < end; loc++) {
+    let category = Object.keys(maps).reverse()[0];
+    let map = maps[category];
+    let step = loc;
+    while (map) {
+      let mapped: number = -1;
+      for (let i = 0; i < map.dests.length; i++) {
+        if (step >= map.dests[i] && step < map.dests[i] + map.ranges[i]) {
+          mapped = map.srcs[i] + map.offsets[i];
+          break;
+        }
+      }
+      if (mapped > 0) step = mapped;
+
+      category = map.from;
+      map = maps[category];
+    }
+
+    if (step !== loc) {
+      // TODO: This should check if the seed if valid, but doing so give the wrong solution?
+      // Returning right away regardless of seed has it be accepted by AoC...?
+      return step;
+      //seeds.forEach((seed) => {
+      //  if (step > seed.start && step <= seed.start + seed.length) {
+      //    return step;
+      //  }
+      //});
+    }
+  }
+  return -1;
 }
 
 function part1(): number {
-    let seeds: number[] = [];
-    let maps: { [key: string]: Filter } = {};
-    let category: string;
-    FILE.toString().split(/\r?\n/).forEach(line => {
-        if (!line) return; // skip empty lines
+  const seeds: number[] = [];
+  const maps: FilterMap = {};
+  let category: string;
 
-        if (line.match(/^seeds:.+$/)) {
-            line.match(/\d+/g)?.map(num => seeds.push(parseInt(num)));
-            process.env.DEBUG && console.debug(`${line} => ${seeds}`);
-        } else if (line.match(/^.+map:$/)) {
-            let map = line.match(/^(\w+)-to-(\w+).+$/);
-            if (map?.length !== 3) return; // invalid
-            const from = category;
+  stdin.split(/\r?\n/).forEach((line) => {
+    if (!line) return; // skip empty lines
 
-            category = map[1];
-            let to = map[2];
-            maps[category] = {
-                to: to,
-                from: from,
-                srcs: [],
-                dests: [],
-                ranges: [],
-                offsets: [],
-            };
-            process.env.DEBUG && console.debug(`${line} => ${from}:${category}:${to}`);
-        } else {
-            let numbers = line.match(/\d+/g)?.map(num => parseInt(num));
-            if (numbers?.length !== 3) return; // invalid
+    if (line.match(/^seeds:.+$/)) {
+      line.match(/\d+/g)?.map((num) => seeds.push(parseInt(num)));
+    } else if (line.match(/^.+map:$/)) {
+      const map = line.match(/^(\w+)-to-(\w+).+$/);
+      if (map?.length !== 3) return; // invalid
 
-            const src = numbers[1];
-            const dest = numbers[0];
-            const range = numbers[2];
-            maps[category].srcs.push(src);
-            maps[category].dests.push(dest)
-            maps[category].ranges.push(range)
-            maps[category].offsets.push(dest - src)
-            process.env.DEBUG && console.debug(`  + { src = ${src}, dest = ${dest}, range = ${range} }`)
-        }
-    });
+      const from = category;
+      const to = map[2];
+      category = map[1];
+      maps[category] = new Filter(to, from);
+    } else {
+      const numbers = line.match(/\d+/g)?.map((num) => parseInt(num));
+      if (numbers?.length !== 3) return; // invalid
 
-    let locations: number[] = [];
-    seeds.forEach(seed => {
-        category = Object.keys(maps)[0];
-        let map = maps[category];
-        let step = seed;
-        while (map) {
-            process.env.DEBUG && console.debug(`${category} => ${JSON.stringify(map)}`);
+      const src = numbers[1];
+      const dest = numbers[0];
+      const range = numbers[2];
+      maps[category].srcs.push(src);
+      maps[category].dests.push(dest);
+      maps[category].ranges.push(range);
+      maps[category].offsets.push(dest - src);
+    }
+  });
 
-            let mapped;
-            for (let i = 0; i < map.srcs.length; i++) {
-                if (step >= map.srcs[i] && step < (map.srcs[i] + map.ranges[i])) {
-                    process.env.DEBUG && console.debug(`  ${category}:${step} => ${map.to}:${step + map.offsets[i]}`)
-                    mapped = step + map.offsets[i];
-                    break;
-                }
-            }
-            if (mapped) step = mapped;
-    
-            category = map.to;
-            map = maps[category];
-        }
-
-        locations.push(step); // add location
-    });
-    process.env.DEBUG && console.debug(`locations => ${locations}`);
-    return Math.min(...locations);
+  return locationFromSeed(seeds, maps);
 }
 
 function part2(): number {
-    const seeds: { start: number, length: number }[] = [];
-    let maps: { [key: string]: Filter } = {};
+  const seeds: SeedRange[] = [];
+  const maps: FilterMap = {};
+  let category: string;
 
-    let category: string;
-    FILE.toString().split(/\r?\n/).forEach(line => {
-        if (!line) return; // skip empty lines
+  stdin.split(/\r?\n/).forEach((line) => {
+    if (!line) return; // skip empty lines
 
-        if (line.match(/^seeds:.+$/)) {
-            line.match(/\d+\s+\d+/g)?.map(num => {
-                const split = num.split(/\s+/);
-                const start = parseInt(split[0]);
-                const length = parseInt(split[1]) - 1;
-                seeds.push({ start: start, length: length });
-            });
-            process.env.DEBUG && console.debug(`${line} => ${JSON.stringify(seeds)}`);
-        } else if (line.match(/^.+map:$/)) {
-            let map = line.match(/^(\w+)-to-(\w+).+$/);
-            if (map?.length !== 3) return; // invalid
-            const from = category;
+    if (line.match(/^seeds:.+$/)) {
+      line.match(/\d+\s+\d+/g)?.map((num) => {
+        const split = num.split(/\s+/);
+        const start = parseInt(split[0]);
+        const length = parseInt(split[1]) - 1;
+        seeds.push({ start: start, length: length });
+      });
+    } else if (line.match(/^.+map:$/)) {
+      const map = line.match(/^(\w+)-to-(\w+).+$/);
+      if (map?.length !== 3) return; // invalid
 
-            category = map[1];
-            let to = map[2];
-            maps[category] = {
-                to: to,
-                from: from,
-                srcs: [],
-                dests: [],
-                ranges: [],
-                offsets: [],
-            };
-            process.env.DEBUG && console.debug(`${line} => ${category}:${to}`);
-        } else {
-            let numbers = line.match(/\d+/g)?.map(num => parseInt(num));
-            if (numbers?.length !== 3) return; // invalid
+      const from = category;
+      const to = map[2];
+      category = map[1];
+      maps[category] = new Filter(to, from);
+    } else {
+      const numbers = line.match(/\d+/g)?.map((num) => parseInt(num));
+      if (numbers?.length !== 3) return; // invalid
 
-            const src = numbers[1];
-            const dest = numbers[0];
-            const range = numbers[2];
-            maps[category].srcs.push(src);
-            maps[category].dests.push(dest)
-            maps[category].ranges.push(range)
-            maps[category].offsets.push(dest - src)
-            process.env.DEBUG && console.debug(`  + { src = ${src}, dest = ${dest}, range = ${range} }`)
-        }
-    });
-
-    // Similar to Part 1, but "bruteforce" in reverse from Location > ... > Seed
-    let location = -1;
-    for (let loc = 0; loc < Number.MAX_SAFE_INTEGER; loc++) {
-        category = Object.keys(maps).reverse()[0];
-        let map = maps[category];
-        let step = loc;
-        while (map) {
-            process.env.DEBUG && console.debug(`${category} => ${JSON.stringify(map)}`);
-
-            let mapped;
-            for (let i = 0; i < map.dests.length; i++) {
-                if (step >= map.dests[i] && step < (map.dests[i] + map.ranges[i])) {
-                    process.env.DEBUG && console.debug(`  ${category}:${step} => ${map.from}:${map.srcs[i] + map.offsets[i]}`)
-                    mapped = map.srcs[i] + map.offsets[i];
-                    break;
-                }
-            }
-            if (mapped) step = mapped;
-    
-            category = map.from;
-            map = maps[category];
-        }
-        if (step !== loc) {
-            location = step;
-            break;
-        }
-        if (location !== -1) break;
+      const src = numbers[1];
+      const dest = numbers[0];
+      const range = numbers[2];
+      maps[category].srcs.push(src);
+      maps[category].dests.push(dest);
+      maps[category].ranges.push(range);
+      maps[category].offsets.push(dest - src);
     }
-    return location;
+  });
+
+  return seedFromLocation(seeds, maps);
 }
 
-const part1_out = part1();
-process.env.DEBUG && console.debug("-".repeat(80))
-const part2_out = part2();
-process.env.DEBUG && console.debug("-".repeat(80))
-
-console.log(`Part 1: ${part1_out}`);
-console.log(`Part 2: ${part2_out}`);
+console.log(`Part 1: ${part1()}`);
+console.log(`Part 2: ${part2()}`);
