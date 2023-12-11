@@ -1,5 +1,5 @@
 {
-  "name": "mirage-maintenance",
+  "name": "pipe-maze",
   "version": "1.0.0",
   "scripts": {
     "lint": "npx eslint .",
