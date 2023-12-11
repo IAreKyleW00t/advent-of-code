@@ -6,7 +6,6 @@ type CoordinateType = "#" | ".";
 
 interface Coordinate {
   type: CoordinateType;
-  value?: number;
   x: number;
   y: number;
 }
@@ -18,10 +17,7 @@ class Universe {
   expandedCols: number[] = [];
 
   add(coord: Coordinate): void {
-    if (coord.type === "#") {
-      coord.value = this.galaxies.length + 1;
-      this.galaxies.push(coord);
-    } else coord.value = 0;
+    if (coord.type === "#") this.galaxies.push(coord);
     if (!this.space[coord.y]) this.space[coord.y] = [];
     this.space[coord.y][coord.x] = coord;
   }
@@ -36,7 +32,7 @@ class Universe {
     return pairs;
   }
 
-  expand(): void {
+  analyze(): void {
     const count: number[] = new Array<number>(this.space.length).fill(0);
     this.space.forEach((row, y) => {
       row.forEach((coord, x) => {
@@ -53,30 +49,25 @@ class Universe {
     });
   }
 
-  distance(multiplier: number = 1): number {
-    let total: number = 0;
-    this.pairs().forEach((pair) => {
-      let start = Math.min(pair[0].y, pair[1].y);
-      let end = Math.max(pair[0].y, pair[1].y);
-      for (let i = start; i < end; i++) {
-        if (this.expandedRows.includes(i)) {
-          total += multiplier;
-        } else {
-          total += 1;
-        }
-      }
+  travel(a: Coordinate, b: Coordinate, multiplier: number = 1): number {
+    let distance: number = 0;
+    for (let i = Math.min(a.y, b.y); i < Math.max(a.y, b.y); i++) {
+      if (this.expandedRows.includes(i)) distance += multiplier;
+      else distance += 1;
+    }
+    for (let i = Math.min(a.x, b.x); i < Math.max(a.x, b.x); i++) {
+      if (this.expandedCols.includes(i)) distance += multiplier;
+      else distance += 1;
+    }
+    return distance;
+  }
 
-      start = Math.min(pair[0].x, pair[1].x);
-      end = Math.max(pair[0].x, pair[1].x);
-      for (let i = start; i < end; i++) {
-        if (this.expandedCols.includes(i)) {
-          total += multiplier;
-        } else {
-          total += 1;
-        }
-      }
-    });
-    return total;
+  traverse(multiplier: number = 1): number {
+    return this.pairs().reduce(
+      (distance, pair) =>
+        (distance += this.travel(pair[0], pair[1], multiplier)),
+      0
+    );
   }
 }
 
@@ -92,8 +83,8 @@ function part1(): number {
     });
   });
 
-  universe.expand();
-  return universe.distance(2);
+  universe.analyze();
+  return universe.traverse(2);
 }
 
 function part2(): number {
@@ -108,8 +99,8 @@ function part2(): number {
     });
   });
 
-  universe.expand();
-  return universe.distance(1_000_000);
+  universe.analyze();
+  return universe.traverse(1_000_000);
 }
 
 console.log(`Part 1: ${part1()}`);
