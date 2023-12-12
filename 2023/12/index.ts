@@ -9,10 +9,6 @@ interface Record {
   groups: number[];
 }
 
-function base64encode(str: string): string {
-  return Buffer.from(str, "binary").toString("base64");
-}
-
 // si = current position in springs[]
 // gi = current position in groups[]
 // length = length of current series of '#' in springs
@@ -29,8 +25,8 @@ function arrangements(
 
   // Memoization/Dynamic Programming used to load from cache
   // concat si, gi, and length as a string and encode it
-  const key = base64encode(`${si}:${gi}:${length}`);
-  if (Object.keys(cache).includes(key)) return cache[key];
+  const key = `${si}:${gi}:${length}`;
+  if (Object.keys(cache).includes(key.toString())) return cache[key];
 
   // we're done looking through all characters, we are at the end
   if (si === springs.length) {
