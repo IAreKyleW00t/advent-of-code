@@ -4,4 +4,4 @@ Just a place to store my progress on the yearly [Advent of Code](https://advento
 
 ## License
 
-Solutions are available for use under the [Apache-2.0](LICENSE) license. Advent of Code puzzles, solutions, and inputs are not included as [part of their policy](https://adventofcode.com/about#faq_copying).
+Solution code is available for public use under the [Apache-2.0](LICENSE) license. Advent of Code puzzle text, solutions, and inputs are not included as [part of their policy](https://adventofcode.com/about#faq_copying).
