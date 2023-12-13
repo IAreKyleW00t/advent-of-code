@@ -74,8 +74,8 @@ function part1(): number {
 
     const split = line.split(" ");
 
-    let springs: Spring[] = split[0].split("").map((s) => s as Spring);
-    let groups: number[] = split[1].split(",").map((g) => parseInt(g));
+    const springs: Spring[] = split[0].split("").map((s) => s as Spring);
+    const groups: number[] = split[1].split(",").map((g) => parseInt(g));
     records.push({ springs: springs, groups: groups });
   });
 
@@ -95,8 +95,8 @@ function part2(): number {
     split[0] = [split[0], split[0], split[0], split[0], split[0]].join("?");
     split[1] = [split[1], split[1], split[1], split[1], split[1]].join(",");
 
-    let springs: Spring[] = split[0].split("").map((s) => s as Spring);
-    let groups: number[] = split[1].split(",").map((g) => parseInt(g));
+    const springs: Spring[] = split[0].split("").map((s) => s as Spring);
+    const groups: number[] = split[1].split(",").map((g) => parseInt(g));
     records.push({ springs: springs, groups: groups });
   });
 
