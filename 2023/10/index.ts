@@ -9,12 +9,20 @@ interface Tile {
   coords: Coordinate;
   type: TileType;
   visited?: boolean;
+  filled?: boolean;
 }
 
 class Grid {
   start: Tile = { type: "S", coords: [0, 0] };
   tiles: Tile[][] = [];
   path: Tile[] = [];
+  prevCorner: Tile | undefined;
+
+  add(tile: Tile, x: number, y: number): void {
+    if (tile.type === "S") this.start = tile;
+    if (!this.tiles[y]) this.tiles[y] = [];
+    this.tiles[y][x] = tile;
+  }
 
   validCoordinates(coords: Coordinate): boolean {
     return (
@@ -25,14 +33,119 @@ class Grid {
     );
   }
 
-  isValidStep(tile: Tile, types: TileType[] = ["."]): boolean {
+  validStep(tile: Tile, types: TileType[] = ["."]): boolean {
     return !types.includes(tile.type) && !tile.visited;
   }
 
-  add(tile: Tile, x: number, y: number): void {
-    if (tile.type === "S") this.start = tile;
-    if (!this.tiles[y]) this.tiles[y] = [];
-    this.tiles[y][x] = tile;
+  // Showlace theorem (triangle formula)
+  // https://en.wikipedia.org/wiki/Shoelace_formula
+  area(): number {
+    let sum: number = 0;
+    for (let i = 0; i < this.path.length; i++) {
+      const j: number = (i + 1) % this.path.length;
+      sum +=
+        this.path[i].coords[1] * this.path[j].coords[0] -
+        this.path[i].coords[0] * this.path[j].coords[1];
+    }
+    return sum / 2;
+  }
+
+  // Pick's theorem
+  // https://en.wikipedia.org/wiki/Pick%27s_theorem
+  inner(): number {
+    return this.area() - this.path.length / 2 + 1;
+  }
+
+  step(from: Tile): Tile {
+    const y = from.coords[0];
+    const x = from.coords[1];
+    let next: Tile, prev: Tile;
+    switch (from.type) {
+      case "|":
+        if (this.validCoordinates([y + 1, x])) {
+          next = this.tiles[y + 1][x];
+          if (this.validStep(next)) return next;
+        }
+        if (this.validCoordinates([y - 1, x])) {
+          prev = this.tiles[y - 1][x];
+          if (this.validStep(prev)) return prev;
+        }
+        break;
+      case "-":
+        if (this.validCoordinates([y, x + 1])) {
+          next = this.tiles[y][x + 1];
+          if (this.validStep(next)) return next;
+        }
+        if (this.validCoordinates([y, x - 1])) {
+          prev = this.tiles[y][x - 1];
+          if (this.validStep(prev)) return prev;
+        }
+        break;
+      case "L":
+        if (this.validCoordinates([y - 1, x])) {
+          next = this.tiles[y - 1][x];
+          if (this.validStep(next)) return next;
+        }
+        if (this.validCoordinates([y, x + 1])) {
+          prev = this.tiles[y][x + 1];
+          if (this.validStep(prev)) return prev;
+        }
+        break;
+      case "J":
+        if (this.validCoordinates([y - 1, x])) {
+          next = this.tiles[y - 1][x];
+          if (this.validStep(next)) return next;
+        }
+        if (this.validCoordinates([y, x - 1])) {
+          prev = this.tiles[y][x - 1];
+          if (this.validStep(prev)) return prev;
+        }
+        break;
+      case "7":
+        if (this.validCoordinates([y, x - 1])) {
+          next = this.tiles[y][x - 1];
+          if (this.validStep(next)) return next;
+        }
+        if (this.validCoordinates([y + 1, x])) {
+          prev = this.tiles[y + 1][x];
+          if (this.validStep(prev)) return prev;
+        }
+        break;
+      case "F":
+        if (this.validCoordinates([y, x + 1])) {
+          next = this.tiles[y][x + 1];
+          if (this.validStep(next)) return next;
+        }
+        if (this.validCoordinates([y + 1, x])) {
+          prev = this.tiles[y + 1][x];
+          if (this.validStep(prev)) return prev;
+        }
+        break;
+      case "S":
+        // up/down
+        if (this.validCoordinates([y + 1, x])) {
+          next = this.tiles[y + 1][x];
+          if (this.validStep(next, [".", "7", "F"])) return next;
+        }
+        if (this.validCoordinates([y - 1, x])) {
+          prev = this.tiles[y - 1][x];
+          if (this.validStep(prev, [".", "L", "J"])) return prev;
+        }
+
+        // left/right
+        if (this.validCoordinates([y, x + 1])) {
+          next = this.tiles[y][x + 1];
+          if (this.validStep(next, [".", "|", "F"])) return next;
+        }
+        if (this.validCoordinates([y, x - 1])) {
+          prev = this.tiles[y][x - 1];
+          if (this.validStep(prev, [".", "-", "J"])) return prev;
+        }
+        break;
+      default:
+        return this.tiles[y][x];
+    }
+    return from; // move no where
   }
 
   walk(): number {
@@ -44,130 +157,6 @@ class Grid {
     }
     return this.path.length; // distance walked
   }
-
-  step(from: Tile): Tile {
-    const y = from.coords[0];
-    const x = from.coords[1];
-    let next: Tile, prev: Tile;
-    switch (from.type) {
-      case "|":
-        if (this.validCoordinates([y + 1, x])) {
-          next = this.tiles[y + 1][x];
-          if (this.isValidStep(next)) return next;
-        }
-        if (this.validCoordinates([y - 1, x])) {
-          prev = this.tiles[y - 1][x];
-          if (this.isValidStep(prev)) return prev;
-        }
-      case "-":
-        if (this.validCoordinates([y, x + 1])) {
-          next = this.tiles[y][x + 1];
-          if (this.isValidStep(next)) return next;
-        }
-        if (this.validCoordinates([y, x - 1])) {
-          prev = this.tiles[y][x - 1];
-          if (this.isValidStep(prev)) return prev;
-        }
-      case "L":
-        if (this.validCoordinates([y - 1, x])) {
-          next = this.tiles[y - 1][x];
-          if (this.isValidStep(next)) return next;
-        }
-        if (this.validCoordinates([y, x + 1])) {
-          prev = this.tiles[y][x + 1];
-          if (this.isValidStep(prev)) return prev;
-        }
-      case "J":
-        if (this.validCoordinates([y - 1, x])) {
-          next = this.tiles[y - 1][x];
-          if (this.isValidStep(next)) return next;
-        }
-        if (this.validCoordinates([y, x - 1])) {
-          prev = this.tiles[y][x - 1];
-          if (this.isValidStep(prev)) return prev;
-        }
-      case "7":
-        if (this.validCoordinates([y, x - 1])) {
-          next = this.tiles[y][x - 1];
-          if (this.isValidStep(next)) return next;
-        }
-        if (this.validCoordinates([y + 1, x])) {
-          prev = this.tiles[y + 1][x];
-          if (this.isValidStep(prev)) return prev;
-        }
-      case "F":
-        if (this.validCoordinates([y, x + 1])) {
-          next = this.tiles[y][x + 1];
-          if (this.isValidStep(next)) return next;
-        }
-        if (this.validCoordinates([y + 1, x])) {
-          prev = this.tiles[y + 1][x];
-          if (this.isValidStep(prev)) return prev;
-        }
-      case "S":
-        // up/down
-        if (this.validCoordinates([y + 1, x])) {
-          next = this.tiles[y + 1][x];
-          if (this.isValidStep(next, [".", "7", "F"])) return next;
-        }
-        if (this.validCoordinates([y - 1, x])) {
-          prev = this.tiles[y - 1][x];
-          if (this.isValidStep(prev, [".", "L", "J"])) return prev;
-        }
-
-        // left/right
-        if (this.validCoordinates([y, x + 1])) {
-          next = this.tiles[y][x + 1];
-          if (this.isValidStep(next, [".", "|", "F"])) return next;
-        }
-        if (this.validCoordinates([y, x - 1])) {
-          prev = this.tiles[y][x - 1];
-          if (this.isValidStep(prev, [".", "-", "J"])) return prev;
-        }
-      default:
-        return this.tiles[y][x];
-    }
-  }
-}
-
-function floodfill(grid: Grid, coord?: Coordinate): number {
-  const stack: Coordinate[] = [];
-  stack.push(coord ?? grid.start.coords);
-
-  while (stack.length > 0) {
-    let coords = stack.pop();
-    if (!coords) break;
-
-    const y = coords[0];
-    const x = coords[1];
-
-    if (!grid.validCoordinates(coords)) continue;
-    if (grid.tiles[y][x].visited) continue;
-    grid.tiles[y][x].visited = true;
-
-    stack.push([y + 1, x]);
-    stack.push([y - 1, x]);
-    stack.push([y, x + 1]);
-    stack.push([y, x - 1]);
-  }
-
-  return grid.tiles.reduce(
-    (sum, row) =>
-      (sum += row
-        .filter((tile) => tile.visited)
-        .reduce((sum) => (sum += 1), 0)),
-    0
-  );
-}
-
-function pprint(tile: Tile): string {
-  return tile.type
-    .replace("-", "═")
-    .replace("|", "║")
-    .replace("7", "╗")
-    .replace("J", "╝")
-    .replace("F", "╔")
-    .replace("L", "╚");
 }
 
 function part1(): number {
@@ -199,20 +188,7 @@ function part2(): number {
   });
 
   grid.walk();
-  const fill = floodfill(grid);
-
-  let count: number = 0;
-  grid.tiles.forEach((row) => {
-    row.forEach((tile) => {
-      // TODO: track each inner tile and run fill() on it
-      if (grid.path.includes(tile)) process.stdout.write(pprint(tile));
-      else process.stdout.write(".");
-    });
-    console.log();
-  });
-
-  const path = grid.path.length;
-  return fill - path;
+  return grid.inner();
 }
 
 console.log(`Part 1: ${part1()}`);
