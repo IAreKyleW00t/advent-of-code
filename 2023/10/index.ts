@@ -37,7 +37,7 @@ class Grid {
     return !types.includes(tile.type) && !tile.visited;
   }
 
-  // Showlace theorem (triangle formula)
+  // Shoelace theorem (triangle formula)
   // https://en.wikipedia.org/wiki/Shoelace_formula
   area(): number {
     let sum: number = 0;
