@@ -74,24 +74,23 @@ function tilt(platform: string[][]): string[][] {
 
 let cycle_cache: { [key: string]: string[][] } = {};
 function cycle(platform: string[][], cycles: number): string[][] {
-  let cycle: string[][] = platform;
-  let i = 0;
-  for (i = 0; i < cycles; i++) {
+  let c: string[][] = platform;
+  for (let i = 0; i < cycles; i++) {
     // If we encounter a pattern that we have already seen
-    // then this a loop and we can
-    const key = btoa(JSON.stringify(cycle));
+    // then this should be a loop?
+    const key = btoa(JSON.stringify(c));
     if (Object.keys(cycle_cache).includes(key)) {
       return cycle_cache[key];
     }
 
-    cycle = rrotate(tilt(lrotate(cycle))); // N
-    cycle = tilt(cycle); // W
-    cycle = tilt(rrotate(cycle)); // S
-    cycle = rrotate(rrotate(tilt(rrotate(cycle)))); // E
+    c = rrotate(tilt(lrotate(c))); // N
+    c = tilt(c); // W
+    c = tilt(rrotate(c)); // S
+    c = rrotate(rrotate(tilt(rrotate(c)))); // E
 
-    cycle_cache[key] = cycle;
+    cycle_cache[key] = c;
   }
-  return cycle;
+  return c;
 }
 
 function pprint(p: string[][]): void {
