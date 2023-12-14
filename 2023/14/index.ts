@@ -28,7 +28,15 @@ function calculateLoad(platform: string[][]): number {
   );
 }
 
+let tilt_cache: { [key: string]: string[][] } = {};
 function tilt(platform: string[][]): string[][] {
+  // If we're tilting a pattern we've already tilted
+  // then just return the output
+  const key = btoa(JSON.stringify(platform));
+  if (Object.keys(tilt_cache).includes(key)) {
+    return tilt_cache[key];
+  }
+
   platform.forEach((row) => {
     let pci: number = -1;
     let ci: number = row.indexOf("#");
@@ -47,9 +55,11 @@ function tilt(platform: string[][]): string[][] {
         } else row[i] = ".";
       }
 
-      // if ci is a cube then leave it
-      // otherwise it was empty or a rock that slide down
-      if (row[ci] !== "#") row[ci] = ".";
+      // if ci is a cube and we don't have any rocks left over
+      // that means they tumbled down. If a rock is still remaining
+      // then it's just hanging at the edge
+      if (row[ci] !== "#" && rocks === 0) row[ci] = ".";
+      if (row[ci] !== "#" && rocks > 0) row[ci] = "O";
 
       pci = ci;
       c = ci + 1;
@@ -57,16 +67,29 @@ function tilt(platform: string[][]): string[][] {
       if (ci < 0) ci = row.length - 1;
     }
   });
+
+  tilt_cache[key] = platform;
   return platform;
 }
 
+let cycle_cache: { [key: string]: string[][] } = {};
 function cycle(platform: string[][], cycles: number): string[][] {
   let cycle: string[][] = platform;
-  for (let i = 0; i < cycles; i++) {
+  let i = 0;
+  for (i = 0; i < cycles; i++) {
+    // If we encounter a pattern that we have already seen
+    // then this a loop and we can
+    const key = btoa(JSON.stringify(cycle));
+    if (Object.keys(cycle_cache).includes(key)) {
+      return cycle_cache[key];
+    }
+
     cycle = rrotate(tilt(lrotate(cycle))); // N
     cycle = tilt(cycle); // W
     cycle = tilt(rrotate(cycle)); // S
     cycle = rrotate(rrotate(tilt(rrotate(cycle)))); // E
+
+    cycle_cache[key] = cycle;
   }
   return cycle;
 }
@@ -91,8 +114,7 @@ function part2(): number {
     if (!line) return; // skip blank lines
     platform.push(line.split(""));
   });
-  const cycles: number = 1_000_000_000;
-  const cycled: string[][] = cycle(platform, cycles);
+  const cycled: string[][] = cycle(platform, 1_000_000_000);
   pprint(cycled);
   return calculateLoad(cycled);
 }
