@@ -7,7 +7,7 @@ function compare(a: string[], b: string[]): number {
 }
 
 // rotates 90 degrees to the right
-function transpose(m: any[][]): any[][] {
+function transpose(m: string[][]): string[][] {
   return m[0].map((_, col) => m.map((row) => row[col]));
 }
 
@@ -52,7 +52,7 @@ function reflect(pattern: string[][], smudges: number = 0): number {
 }
 
 function part1(): number {
-  let patterns: string[][][] = [];
+  const patterns: string[][][] = [];
   let pcount: number = 0;
   stdin.split(/\r?\n/).forEach((line) => {
     if (!line) {
@@ -68,7 +68,7 @@ function part1(): number {
 }
 
 function part2(): number {
-  let patterns: string[][][] = [];
+  const patterns: string[][][] = [];
   let pcount: number = 0;
   stdin.split(/\r?\n/).forEach((line) => {
     if (!line) {
