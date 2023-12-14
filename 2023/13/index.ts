@@ -11,51 +11,44 @@ function transpose(m: any[][]): any[][] {
   return m[0].map((_, col) => m.map((row) => row[col]));
 }
 
-// same as reflecting horizontal by transposing the matrix
-function reflections_v(
-  pattern: string[][],
-  c: number,
-  d: number,
-  m: number = -1,
-  smudges: number = 0
-): number {
-  return reflections_h(transpose(pattern), c, d, m, smudges);
-}
+function reflections(pattern: string[][], line: number): number {
+  // move forward because a reflection is not 32123, it's 321123
+  // so we need to account for the extra line
+  line += 1;
 
-// p = pattern matrix
-// c = current center index
-// d = distance from current center
-// m = current closest match to edge
-// returns the index of the row of reflection
-function reflections_h(
-  p: string[][],
-  c: number,
-  d: number,
-  m: number = -1,
-  smudges: number = 0
-): number {
-  if (c === p.length - 1) {
-    return -1;
-  } else if (c - d < 0 || c + d + 1 > p.length - 1) {
-    return m;
-  } else if (compare(p[c - d], p[c + d + 1]) <= smudges) {
-    m = c;
-    return reflections_h(p, c, d + 1, c, smudges);
-  } else {
-    return reflections_h(p, c + 1, 0, m, smudges);
+  let unmatched: number = 0;
+  for (let i = 0; i < pattern.length; i++) {
+    let distance: number = 0; // from line
+
+    // calculate distance from line
+    if (i >= line) distance = line - 1 - (i - line); // above
+    else distance = line - 1 - i + line; // below
+    if (distance < 0 || distance >= pattern.length) continue;
+
+    // count number of mismatched blocks between rows
+    unmatched += compare(pattern[i], pattern[distance]);
   }
+
+  // divide by 2 because the loop will
+  return unmatched / 2;
 }
 
-function pprint(pattern: string[][], v?: number, h?: number): void {
-  pattern.forEach((row, y) => {
-    row.forEach((p, x) => {
-      if (y === h && x === v) process.stdout.write("╬");
-      else if (y === h) process.stdout.write("═");
-      else if (x === v) process.stdout.write("║");
-      else process.stdout.write(p);
-    });
-    console.log();
-  });
+function reflect(pattern: string[][], smudges: number = 0): number {
+  let total: number = 0;
+
+  // horizontal
+  for (let i = 0; i < pattern.length - 1; i++) {
+    const r: number = reflections(pattern, i);
+    if (r === smudges) total += 100 * (i + 1);
+  }
+
+  // rotate matrix and then recheck "vertical"
+  const t: string[][] = transpose(pattern);
+  for (let i = 0; i < t.length - 1; i++) {
+    const r: number = reflections(t, i);
+    if (r === smudges) total += i + 1;
+  }
+  return total;
 }
 
 function part1(): number {
@@ -71,14 +64,7 @@ function part1(): number {
     patterns[pcount].push(line.split(""));
   });
 
-  let total: number = 0;
-  patterns.forEach((pattern) => {
-    const h = reflections_h(pattern, 0, 0, 0);
-    const v = reflections_v(pattern, 0, 0, 0);
-    if (h >= 0 && v < 0) total += 100 * (h + 1);
-    else if (v >= 0 && h < 0) total += v + 1;
-  });
-  return total;
+  return patterns.reduce((sum, pattern) => (sum += reflect(pattern, 0)), 0);
 }
 
 function part2(): number {
@@ -94,20 +80,8 @@ function part2(): number {
     patterns[pcount].push(line.split(""));
   });
 
-  let total: number = 0;
-  patterns.forEach((pattern) => {
-    const h = reflections_h(pattern, 0, 0, 0, 1);
-    const v = reflections_v(pattern, 0, 0, 0, 1);
-    pprint(pattern, v, h);
-    console.log(`h = ${h}, v = ${v}`);
-    if (h <= v || v < 0) total += 100 * (h + 1);
-    else if (v <= h || h < 0) total += v + 1;
-    console.log(`total = ${total}`);
-    console.log();
-  });
-  return total;
+  return patterns.reduce((sum, pattern) => (sum += reflect(pattern, 1)), 0);
 }
 
 console.log(`Part 1: ${part1()}`);
-console.log();
 console.log(`Part 2: ${part2()}`);
