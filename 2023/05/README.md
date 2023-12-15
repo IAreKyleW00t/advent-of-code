@@ -1,4 +1,4 @@
-# Day 5
+# Day 5 ${\color{yellow}★★}$
 
 https://adventofcode.com/2023/day/5
 

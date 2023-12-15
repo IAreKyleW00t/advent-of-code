@@ -1,4 +1,4 @@
-# Day 10
+# Day 10 ${\color{yellow}★★}$
 
 https://adventofcode.com/2023/day/10
 

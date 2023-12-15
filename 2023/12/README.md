@@ -1,4 +1,4 @@
-# Day 12
+# Day 12 ${\color{yellow}★★}$
 
 https://adventofcode.com/2023/day/12
 
