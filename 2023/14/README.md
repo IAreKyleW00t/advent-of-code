@@ -1,0 +1,8 @@
+# Day 14
+
+https://adventofcode.com/2023/day/14
+
+```
+npm install
+npm start < input.txt
+```
