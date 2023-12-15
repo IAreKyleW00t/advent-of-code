@@ -63,11 +63,8 @@ function part2(input: string[]): number {
     line.split(",").map((l) => {
       const s: string[] = l.split(/=|-/);
       const lens: Lens = { label: s[0], focal: parseInt(s[1]) || -1 };
-      if (lens.focal > 0) {
-        addLens(boxes, lens);
-      } else {
-        removeLens(boxes, lens);
-      }
+      if (lens.focal > 0) addLens(boxes, lens);
+      else removeLens(boxes, lens);
     });
   });
   return calculatePower(boxes);
