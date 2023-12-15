@@ -29,7 +29,7 @@ function part1(input: string[]): number {
     if (!line) return; // skip empty lines
 
     const numbers: string = line.replace(/[a-z]/gi, "");
-    sum += parseInt(`${numbers[0]}${numbers.slice(-1)}`);
+    sum += parseInt(`${numbers[0]}${numbers.slice(-1)}`) || 0;
   });
   return sum;
 }
