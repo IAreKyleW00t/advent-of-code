@@ -1,7 +1,5 @@
 import * as fs from "fs";
 
-const stdin: string = fs.readFileSync(0).toString();
-
 type TileType = "|" | "-" | "L" | "J" | "7" | "F" | "." | "S";
 type Coordinate = [number, number];
 
@@ -171,10 +169,10 @@ class Grid {
   }
 }
 
-function part1(): number {
+function part1(input: string[]): number {
   const grid: Grid = new Grid();
 
-  stdin.split(/\r?\n/).forEach((line, y) => {
+  input.forEach((line, y) => {
     if (!line) return; // skip empty lines
 
     line.split("").forEach((char, x) => {
@@ -186,10 +184,10 @@ function part1(): number {
   return Math.ceil(grid.walk() / 2);
 }
 
-function part2(): number {
+function part2(input: string[]): number {
   const grid: Grid = new Grid();
 
-  stdin.split(/\r?\n/).forEach((line, y) => {
+  input.forEach((line, y) => {
     if (!line) return; // skip empty lines
 
     line.split("").forEach((char, x) => {
@@ -202,10 +200,11 @@ function part2(): number {
   return grid.inner();
 }
 
+const stdin: string[] = fs.readFileSync(0).toString().split(/\r?\n/);
 const tstart: bigint = process.hrtime.bigint();
-const p1: number = part1();
+const p1: number = part1(stdin);
 const tpart: bigint = process.hrtime.bigint();
-const p2: number = part2();
+const p2: number = part2(stdin);
 const tend: bigint = process.hrtime.bigint();
 
 console.log(`Part 1: ${p1} (${Number(tpart - tstart) / 1e6}ms)`);

@@ -1,7 +1,5 @@
 import * as fs from "fs";
 
-const stdin: string = fs.readFileSync(0).toString();
-
 function compare(a: string[], b: string[]): number {
   return a.filter((v, i) => b[i] !== v).length;
 }
@@ -51,11 +49,11 @@ function reflect(pattern: string[][], smudges: number = 0): number {
   return total;
 }
 
-function part1(): number {
+function part1(input: string[]): number {
   const patterns: string[][][] = [];
   let pcount: number = 0;
 
-  stdin.split(/\r?\n/).forEach((line) => {
+  input.forEach((line) => {
     if (!line) {
       pcount++;
       return;
@@ -68,11 +66,11 @@ function part1(): number {
   return patterns.reduce((sum, pattern) => (sum += reflect(pattern, 0)), 0);
 }
 
-function part2(): number {
+function part2(input: string[]): number {
   const patterns: string[][][] = [];
   let pcount: number = 0;
 
-  stdin.split(/\r?\n/).forEach((line) => {
+  input.forEach((line) => {
     if (!line) {
       pcount++;
       return;
@@ -85,10 +83,11 @@ function part2(): number {
   return patterns.reduce((sum, pattern) => (sum += reflect(pattern, 1)), 0);
 }
 
+const stdin: string[] = fs.readFileSync(0).toString().split(/\r?\n/);
 const tstart: bigint = process.hrtime.bigint();
-const p1: number = part1();
+const p1: number = part1(stdin);
 const tpart: bigint = process.hrtime.bigint();
-const p2: number = part2();
+const p2: number = part2(stdin);
 const tend: bigint = process.hrtime.bigint();
 
 console.log(`Part 1: ${p1} (${Number(tpart - tstart) / 1e6}ms)`);

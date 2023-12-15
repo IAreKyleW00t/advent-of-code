@@ -1,7 +1,5 @@
 import * as fs from "fs";
 
-const stdin: string = fs.readFileSync(0).toString();
-
 class Filter {
   to: string;
   from: string;
@@ -91,12 +89,12 @@ function seedFromLocation(
   return -1;
 }
 
-function part1(): number {
+function part1(input: string[]): number {
   const seeds: number[] = [];
   const maps: FilterMap = {};
   let category: string;
 
-  stdin.split(/\r?\n/).forEach((line) => {
+  input.forEach((line) => {
     if (!line) return; // skip empty lines
 
     if (line.match(/^seeds:.+$/)) {
@@ -126,12 +124,12 @@ function part1(): number {
   return locationFromSeed(seeds, maps);
 }
 
-function part2(): number {
+function part2(input: string[]): number {
   const seeds: SeedRange[] = [];
   const maps: FilterMap = {};
   let category: string;
 
-  stdin.split(/\r?\n/).forEach((line) => {
+  input.forEach((line) => {
     if (!line) return; // skip empty lines
 
     if (line.match(/^seeds:.+$/)) {
@@ -166,10 +164,11 @@ function part2(): number {
   return seedFromLocation(seeds, maps);
 }
 
+const stdin: string[] = fs.readFileSync(0).toString().split(/\r?\n/);
 const tstart: bigint = process.hrtime.bigint();
-const p1: number = part1();
+const p1: number = part1(stdin);
 const tpart: bigint = process.hrtime.bigint();
-const p2: number = part2();
+const p2: number = part2(stdin);
 const tend: bigint = process.hrtime.bigint();
 
 console.log(`Part 1: ${p1} (${Number(tpart - tstart) / 1e6}ms)`);

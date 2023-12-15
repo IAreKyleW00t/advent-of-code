@@ -1,7 +1,5 @@
 import * as fs from "fs";
 
-const stdin: string = fs.readFileSync(0).toString();
-
 function calculateWins(time: number, distance: number): number[] {
   const wins: number[] = [];
   for (let i = 1; i < time; i++) {
@@ -19,11 +17,11 @@ function calculateTotal(times: number[], distances: number[]): number {
   return total;
 }
 
-function part1(): number {
+function part1(input: string[]): number {
   const times: number[] = [];
   const distances: number[] = [];
 
-  stdin.split(/\r?\n/).forEach((line) => {
+  input.forEach((line) => {
     if (!line) return; // skip empty lines
 
     if (line.match(/^Time:.+$/)) {
@@ -36,11 +34,11 @@ function part1(): number {
   return calculateTotal(times, distances);
 }
 
-function part2(): number {
+function part2(input: string[]): number {
   const times: number[] = [];
   const distances: number[] = [];
 
-  stdin.split(/\r?\n/).forEach((line) => {
+  input.forEach((line) => {
     if (!line) return; // skip empty lines
 
     if (line.match(/^Time:.+$/)) {
@@ -55,10 +53,11 @@ function part2(): number {
   return calculateTotal(times, distances);
 }
 
+const stdin: string[] = fs.readFileSync(0).toString().split(/\r?\n/);
 const tstart: bigint = process.hrtime.bigint();
-const p1: number = part1();
+const p1: number = part1(stdin);
 const tpart: bigint = process.hrtime.bigint();
-const p2: number = part2();
+const p2: number = part2(stdin);
 const tend: bigint = process.hrtime.bigint();
 
 console.log(`Part 1: ${p1} (${Number(tpart - tstart) / 1e6}ms)`);

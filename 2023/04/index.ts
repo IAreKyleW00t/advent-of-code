@@ -1,7 +1,5 @@
 import * as fs from "fs";
 
-const stdin: string = fs.readFileSync(0).toString();
-
 interface Card {
   id: number;
   winning: number[];
@@ -51,10 +49,10 @@ function calculateScore(matches: number): number {
   else return 2 ** (matches - 1);
 }
 
-function part1(): number {
+function part1(input: string[]): number {
   let sum: number = 0;
 
-  stdin.split(/\r?\n/).forEach((line) => {
+  input.forEach((line) => {
     if (!line) return; // skip empty lines
 
     const id = parseCardId(line);
@@ -66,10 +64,10 @@ function part1(): number {
   return sum;
 }
 
-function part2(): number {
+function part2(input: string[]): number {
   const all_cards: Card[][] = [];
 
-  stdin.split(/\r?\n/).forEach((line) => {
+  input.forEach((line) => {
     if (!line) return; // skip empty lines
 
     const id = parseCardId(line);
@@ -93,10 +91,11 @@ function part2(): number {
   return all_cards.reduce((sum, curr) => (sum += curr.length), 0);
 }
 
+const stdin: string[] = fs.readFileSync(0).toString().split(/\r?\n/);
 const tstart: bigint = process.hrtime.bigint();
-const p1: number = part1();
+const p1: number = part1(stdin);
 const tpart: bigint = process.hrtime.bigint();
-const p2: number = part2();
+const p2: number = part2(stdin);
 const tend: bigint = process.hrtime.bigint();
 
 console.log(`Part 1: ${p1} (${Number(tpart - tstart) / 1e6}ms)`);
