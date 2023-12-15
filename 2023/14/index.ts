@@ -2,14 +2,6 @@ import * as fs from "fs";
 
 const stdin: string = fs.readFileSync(0).toString();
 
-function transpose(m: string[][]): string[][] {
-  return m[0].map((_, col) => m.map((row) => row[col]));
-}
-
-function reverse(m: string[][]): string[][] {
-  return m.map((row) => row.reverse());
-}
-
 // rotates 90 degrees to the left
 function lrotate(m: string[][]): string[][] {
   return m[0].map((_, col) => m.map((row) => row[row.length - 1 - col]));
@@ -28,15 +20,7 @@ function calculateLoad(platform: string[][]): number {
   );
 }
 
-let tilt_cache: { [key: string]: string[][] } = {};
 function tilt(platform: string[][]): string[][] {
-  // If we're tilting a pattern we've already tilted
-  // then just return the output
-  const key = btoa(JSON.stringify(platform));
-  if (Object.keys(tilt_cache).includes(key)) {
-    return tilt_cache[key];
-  }
-
   platform.forEach((row) => {
     let pci: number = -1;
     let ci: number = row.indexOf("#");
@@ -67,34 +51,29 @@ function tilt(platform: string[][]): string[][] {
       if (ci < 0) ci = row.length - 1;
     }
   });
-
-  tilt_cache[key] = platform;
   return platform;
 }
 
-let cycle_cache: { [key: string]: string[][] } = {};
 function cycle(platform: string[][], cycles: number): string[][] {
   let c: string[][] = platform;
+
+  const history: { [key: string]: number } = {};
   for (let i = 0; i < cycles; i++) {
     // If we encounter a pattern that we have already seen
-    // then this should be a loop?
+    // then we've encountered a loop, so start again from
+    // our current cycle and only do the necessary remaining iterations
     const key = btoa(JSON.stringify(c));
-    if (Object.keys(cycle_cache).includes(key)) {
-      return cycle_cache[key];
+    if (Object.keys(history).includes(key)) {
+      return cycle(c, (cycles - i) % (i - history[key]));
     }
 
     c = rrotate(tilt(lrotate(c))); // N
     c = tilt(c); // W
     c = tilt(rrotate(c)); // S
     c = rrotate(rrotate(tilt(rrotate(c)))); // E
-
-    cycle_cache[key] = c;
+    history[key] = i;
   }
   return c;
-}
-
-function pprint(p: string[][]): void {
-  p.forEach((r) => console.log(r.join("")));
 }
 
 function part1(): number {
@@ -103,7 +82,8 @@ function part1(): number {
     if (!line) return; // skip blank lines
     platform.push(line.split(""));
   });
-  const tilted: string[][] = transpose(tilt(transpose(platform)));
+
+  const tilted = rrotate(tilt(lrotate(platform)));
   return calculateLoad(tilted);
 }
 
@@ -113,8 +93,8 @@ function part2(): number {
     if (!line) return; // skip blank lines
     platform.push(line.split(""));
   });
-  const cycled: string[][] = cycle(platform, 1_000_000_000);
-  pprint(cycled);
+
+  const cycled = cycle(platform, 1_000_000_000);
   return calculateLoad(cycled);
 }
 
