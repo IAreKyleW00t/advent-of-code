@@ -65,4 +65,4 @@ package-lock.json
 /lib/
 
 # Advent of Code inputs
-**/data/*
+**/input*.txt
