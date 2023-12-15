@@ -62,60 +62,72 @@ class Grid {
     let next: Tile, prev: Tile;
     switch (from.type) {
       case "|":
-        if (this.validCoordinates([y + 1, x])) {
-          next = this.tiles[y + 1][x];
-          if (this.validStep(next)) return next;
-        }
+        // up
         if (this.validCoordinates([y - 1, x])) {
           prev = this.tiles[y - 1][x];
           if (this.validStep(prev)) return prev;
         }
-        break;
-      case "-":
-        if (this.validCoordinates([y, x + 1])) {
-          next = this.tiles[y][x + 1];
+        // down
+        if (this.validCoordinates([y + 1, x])) {
+          next = this.tiles[y + 1][x];
           if (this.validStep(next)) return next;
         }
+        break;
+      case "-":
+        /// left
         if (this.validCoordinates([y, x - 1])) {
           prev = this.tiles[y][x - 1];
           if (this.validStep(prev)) return prev;
         }
+        // right
+        if (this.validCoordinates([y, x + 1])) {
+          next = this.tiles[y][x + 1];
+          if (this.validStep(next)) return next;
+        }
         break;
       case "L":
+        // up
         if (this.validCoordinates([y - 1, x])) {
           next = this.tiles[y - 1][x];
           if (this.validStep(next)) return next;
         }
+        // left
         if (this.validCoordinates([y, x + 1])) {
           prev = this.tiles[y][x + 1];
           if (this.validStep(prev)) return prev;
         }
         break;
       case "J":
+        // up
         if (this.validCoordinates([y - 1, x])) {
           next = this.tiles[y - 1][x];
           if (this.validStep(next)) return next;
         }
+        // right
         if (this.validCoordinates([y, x - 1])) {
           prev = this.tiles[y][x - 1];
           if (this.validStep(prev)) return prev;
         }
         break;
       case "7":
+        // right
         if (this.validCoordinates([y, x - 1])) {
           next = this.tiles[y][x - 1];
           if (this.validStep(next)) return next;
         }
+        // down
         if (this.validCoordinates([y + 1, x])) {
           prev = this.tiles[y + 1][x];
           if (this.validStep(prev)) return prev;
         }
         break;
       case "F":
+        // left
         if (this.validCoordinates([y, x + 1])) {
           next = this.tiles[y][x + 1];
           if (this.validStep(next)) return next;
         }
+        // down
         if (this.validCoordinates([y + 1, x])) {
           prev = this.tiles[y + 1][x];
           if (this.validStep(prev)) return prev;
@@ -171,8 +183,7 @@ function part1(): number {
     });
   });
 
-  const distance = grid.walk();
-  return Math.ceil(distance / 2);
+  return Math.ceil(grid.walk() / 2);
 }
 
 function part2(): number {
@@ -191,5 +202,12 @@ function part2(): number {
   return grid.inner();
 }
 
-console.log(`Part 1: ${part1()}`);
-console.log(`Part 2: ${part2()}`);
+const tstart: bigint = process.hrtime.bigint();
+const p1: number = part1();
+const tpart: bigint = process.hrtime.bigint();
+const p2: number = part2();
+const tend: bigint = process.hrtime.bigint();
+
+console.log(`Part 1: ${p1} (${Number(tpart - tstart) / 1e6}ms)`);
+console.log(`Part 2: ${p2} (${Number(tend - tpart) / 1e6}ms)`);
+console.log(`Total time: ${Number(tend - tstart) / 1e6}ms`);

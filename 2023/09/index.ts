@@ -9,13 +9,13 @@ class Prediction {
     this.values = [values];
 
     let diff: number = 1;
-    while (true) {
+    while (diff > 0) {
       this.values[diff] = [];
       for (let i = 0; i < this.values[diff - 1].length - 1; i++) {
         this.values[diff][i] =
           this.values[diff - 1][i + 1] - this.values[diff - 1][i];
       }
-      if (this.values[diff].filter((num) => num !== 0).length === 0) break;
+      if (this.values[diff].filter((num) => num !== 0).length === 0) diff = -1;
       else diff++;
     }
   }
@@ -73,5 +73,12 @@ function part2(): number {
   return predictions.reduce((sum, prediction) => (sum += prediction.prev()), 0);
 }
 
-console.log(`Part 1: ${part1()}`);
-console.log(`Part 2: ${part2()}`);
+const tstart: bigint = process.hrtime.bigint();
+const p1: number = part1();
+const tpart: bigint = process.hrtime.bigint();
+const p2: number = part2();
+const tend: bigint = process.hrtime.bigint();
+
+console.log(`Part 1: ${p1} (${Number(tpart - tstart) / 1e6}ms)`);
+console.log(`Part 2: ${p2} (${Number(tend - tpart) / 1e6}ms)`);
+console.log(`Total time: ${Number(tend - tstart) / 1e6}ms`);

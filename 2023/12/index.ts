@@ -25,7 +25,7 @@ function arrangements(
 
   // Memoization/Dynamic Programming used to load from cache
   // concat si, gi, and length as a string and encode it
-  const key = `${si}:${gi}:${length}`;
+  const key = JSON.stringify([si, gi, length]);
   if (Object.keys(cache).includes(key.toString())) return cache[key];
 
   // we're done looking through all characters, we are at the end
@@ -67,26 +67,23 @@ function arrangements(
 }
 
 function part1(): number {
-  const records: Record[] = [];
+  let total: number = 0;
 
   stdin.split(/\r?\n/).forEach((line) => {
     if (!line) return; // skip empty lines
 
     const split = line.split(" ");
-
     const springs: Spring[] = split[0].split("").map((s) => s as Spring);
     const groups: number[] = split[1].split(",").map((g) => parseInt(g));
-    records.push({ springs: springs, groups: groups });
+    total += arrangements({ springs: springs, groups: groups }, 0, 0, 0, {});
   });
 
-  return records.reduce(
-    (sum, record) => (sum += arrangements(record, 0, 0, 0, {})),
-    0
-  );
+  return total;
 }
 
+// Part 2 is still pretty slow for some reason... :(
 function part2(): number {
-  const records: Record[] = [];
+  let total: number = 0;
 
   stdin.split(/\r?\n/).forEach((line) => {
     if (!line) return; // skip empty lines
@@ -97,21 +94,18 @@ function part2(): number {
 
     const springs: Spring[] = split[0].split("").map((s) => s as Spring);
     const groups: number[] = split[1].split(",").map((g) => parseInt(g));
-    records.push({ springs: springs, groups: groups });
+    total += arrangements({ springs: springs, groups: groups }, 0, 0, 0, {});
   });
 
-  // still pretty slow... :(
-  let total: number = 0;
-  records.forEach((r, i) => {
-    process.stdout.write(
-      `${i + 1} ${r.springs.join("")} (${r.groups.join(",")}) => `
-    );
-    const sum: number = arrangements(r, 0, 0, 0, {});
-    total += sum;
-    console.log(sum);
-  });
   return total;
 }
 
-console.log(`Part 1: ${part1()}`);
-console.log(`Part 2: ${part2()}`);
+const tstart: bigint = process.hrtime.bigint();
+const p1: number = part1();
+const tpart: bigint = process.hrtime.bigint();
+const p2: number = part2();
+const tend: bigint = process.hrtime.bigint();
+
+console.log(`Part 1: ${p1} (${Number(tpart - tstart) / 1e6}ms)`);
+console.log(`Part 2: ${p2} (${Number(tend - tpart) / 1e6}ms)`);
+console.log(`Total time: ${Number(tend - tstart) / 1e6}ms`);

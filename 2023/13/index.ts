@@ -54,6 +54,7 @@ function reflect(pattern: string[][], smudges: number = 0): number {
 function part1(): number {
   const patterns: string[][][] = [];
   let pcount: number = 0;
+
   stdin.split(/\r?\n/).forEach((line) => {
     if (!line) {
       pcount++;
@@ -70,6 +71,7 @@ function part1(): number {
 function part2(): number {
   const patterns: string[][][] = [];
   let pcount: number = 0;
+
   stdin.split(/\r?\n/).forEach((line) => {
     if (!line) {
       pcount++;
@@ -83,5 +85,12 @@ function part2(): number {
   return patterns.reduce((sum, pattern) => (sum += reflect(pattern, 1)), 0);
 }
 
-console.log(`Part 1: ${part1()}`);
-console.log(`Part 2: ${part2()}`);
+const tstart: bigint = process.hrtime.bigint();
+const p1: number = part1();
+const tpart: bigint = process.hrtime.bigint();
+const p2: number = part2();
+const tend: bigint = process.hrtime.bigint();
+
+console.log(`Part 1: ${p1} (${Number(tpart - tstart) / 1e6}ms)`);
+console.log(`Part 2: ${p2} (${Number(tend - tpart) / 1e6}ms)`);
+console.log(`Total time: ${Number(tend - tstart) / 1e6}ms`);
