@@ -7,13 +7,9 @@ interface Lens {
 }
 
 function hash(str: string): number {
-  let value: number = 0;
-  str.split("").forEach((s) => {
-    value += s.charCodeAt(0);
-    value *= 17;
-    value %= 256;
-  });
-  return value;
+  return str
+    .split("")
+    .reduce((value, s) => ((value + s.charCodeAt(0)) * 17) % 256, 0);
 }
 
 function calculatePower(boxes: Box[]): number {
