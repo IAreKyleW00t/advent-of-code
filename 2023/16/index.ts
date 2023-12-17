@@ -17,18 +17,58 @@ interface Beam {
   next?: Mirror;
 }
 
-function startDirection(mirror: Mirror): Direction[] {
+function nextDirections(beam: Beam, mirror: Mirror | undefined): Direction[] {
+  if (!mirror) return [beam.direction];
   switch (mirror.type) {
     case "/":
-      return ["L"];
+      switch (beam.direction) {
+        case "U":
+          return ["R"];
+        case "D":
+          return ["L"];
+        case "L":
+          return ["D"];
+        case "R":
+          return ["U"];
+      }
     case "\\":
-      return ["R"];
+      switch (beam.direction) {
+        case "U":
+          return ["L"];
+        case "D":
+          return ["R"];
+        case "L":
+          return ["U"];
+        case "R":
+          return ["D"];
+      }
     case "|":
-      return ["D"];
+      switch (beam.direction) {
+        case "L" || "R":
+          return ["U", "D"];
+        default:
+          return [beam.direction];
+      }
     case "-":
-      return ["L", "R"];
+      switch (beam.direction) {
+        case "U" || "D":
+          return ["L", "R"];
+        default:
+          return [beam.direction];
+      }
   }
   return ["D"];
+}
+
+function startBeams(mirrors: Mirror[], initial: Beam): Beam[] {
+  let mirror: Mirror | undefined = mirrors
+    .filter((m) => m.x === initial.x && m.y === initial.y)
+    .pop();
+  return nextDirections(initial, mirror).map((d) => ({
+    x: initial.x,
+    y: initial.y,
+    direction: d,
+  }));
 }
 
 function energize(grid: Grid, beam: Beam, mirror: Mirror | undefined): number {
@@ -75,8 +115,10 @@ function energize(grid: Grid, beam: Beam, mirror: Mirror | undefined): number {
   let xmin: number = Math.min(beam.x, xedge);
   let xmax: number = Math.max(beam.x, xedge);
   for (let i = xmin; i <= xmax; i++) {
-    if (grid[beam.y][i] !== "#") count++;
-    grid[beam.y][i] = "#";
+    if (grid[beam.y][i] !== "#") {
+      count++;
+      grid[beam.y][i] = "#";
+    }
   }
 
   return count;
@@ -157,11 +199,6 @@ function beam(grid: Grid, mirrors: Mirror[], beams: Beam[]): number {
   return count;
 }
 
-function pprint(grid: Grid) {
-  grid.forEach((r) => console.log(r.join("")));
-  console.log();
-}
-
 function part1(input: string[]): number {
   const grid: Grid = [];
   const mirrors: Mirror[] = [];
@@ -176,9 +213,10 @@ function part1(input: string[]): number {
     });
   });
 
-  // Create the initial beam in the top-left, moving right
-  const initial: Beam[] = [{ x: 0, y: 0, direction: "D" }];
-  return beam(grid, mirrors, initial);
+  // Create the initial beam in the top-left based on the mirrors that could be there
+  const initial: Beam = { x: 0, y: 0, direction: "R" };
+  let beams: Beam[] = startBeams(mirrors, initial);
+  return beam(grid, mirrors, beams);
 }
 
 function part2(input: string[]): number {
@@ -195,25 +233,36 @@ function part2(input: string[]): number {
     });
   });
 
-  // Create the initial beam in the top-left, moving right
-  let beams: number[] = [];
+  // Create a beam on that starts at the edge of each colum and row on the grid
+  let engergized: number[] = [];
   for (let i = 0; i < grid[0].length; i++) {
-    const g: Grid = Object.assign([], grid);
-    const mirror: Mirror | undefined = mirrors
-      .filter((m) => m.x === i && m.y === 0)
-      .pop();
+    // top
+    let g: Grid = JSON.parse(JSON.stringify(grid));
+    let initial: Beam = { x: i, y: 0, direction: "D" };
+    let beams: Beam[] = startBeams(mirrors, initial);
+    engergized.push(beam(g, mirrors, beams));
 
-    let initial: Beam[] = [];
-    if (mirror) {
-      initial = startDirection(mirror).map((d) => ({
-        x: i,
-        y: 0,
-        direction: d,
-      }));
-    } else initial = [{ x: i, y: 0, direction: "D" }];
-    beams.push(beam(g, mirrors, initial));
+    // bottom
+    g = JSON.parse(JSON.stringify(grid));
+    initial = { x: i, y: grid[0].length - 1, direction: "U" };
+    beams = startBeams(mirrors, initial);
+    engergized.push(beam(g, mirrors, beams));
   }
-  return Math.max(...beams);
+
+  for (let i = 0; i < grid.length; i++) {
+    // left
+    let g: Grid = JSON.parse(JSON.stringify(grid));
+    let initial: Beam = { x: 0, y: i, direction: "R" };
+    let beams: Beam[] = startBeams(mirrors, initial);
+    engergized.push(beam(g, mirrors, beams));
+
+    // right
+    g = JSON.parse(JSON.stringify(grid));
+    initial = { x: grid.length - 1, y: i, direction: "L" };
+    beams = startBeams(mirrors, initial);
+    engergized.push(beam(g, mirrors, beams));
+  }
+  return Math.max(...engergized);
 }
 
 const stdin: string[] = fs.readFileSync(0).toString().split(/\r?\n/);
