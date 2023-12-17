@@ -15,5 +15,8 @@
     "eslint": "^8.54.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "fast-memoize": "^2.5.2"
   }
 }

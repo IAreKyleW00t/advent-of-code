@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import memoize from "fast-memoize";
 
 type Spring = "." | "#" | "?";
 
@@ -10,21 +11,14 @@ interface Record {
 // si = current position in springs[]
 // gi = current position in groups[]
 // length = length of current series of '#' in springs
-// cache is used during recursive calls
 function arrangements(
   record: Record,
   si: number,
   gi: number,
-  length: number,
-  cache: { [key: string]: number }
+  length: number
 ): number {
   const springs = record.springs;
   const groups = record.groups;
-
-  // Memoization/Dynamic Programming used to load from cache
-  // concat si, gi, and length as a string and encode it
-  const key = JSON.stringify([si, gi, length]);
-  if (Object.keys(cache).includes(key.toString())) return cache[key];
 
   // we're done looking through all characters, we are at the end
   if (si === springs.length) {
@@ -42,7 +36,7 @@ function arrangements(
     if (springs[si] === c || springs[si] === "?") {
       if (c === "." && length === 0) {
         // no active group, so just keep moving forward
-        paths += arrangements(record, si + 1, gi, 0, cache);
+        paths += farrangements(record, si + 1, gi, 0);
       } else if (
         c === "." &&
         length > 0 &&
@@ -51,18 +45,19 @@ function arrangements(
       ) {
         // current group is successfully matched
         // start matching next group and beginning looking for it
-        paths += arrangements(record, si + 1, gi + 1, 0, cache);
+        paths += farrangements(record, si + 1, gi + 1, 0);
       } else if (c === "#") {
         // increase length of group section and keep moving
-        paths += arrangements(record, si + 1, gi, length + 1, cache);
+        paths += farrangements(record, si + 1, gi, length + 1);
       }
     }
   });
 
-  // Save current arrangement into cache for later loading
-  cache[key] = paths;
   return paths;
 }
+
+// Memoization used to greatly speed things up
+const farrangements = memoize(arrangements);
 
 function part1(input: string[]): number {
   let total: number = 0;
@@ -73,13 +68,12 @@ function part1(input: string[]): number {
     const split = line.split(" ");
     const springs: Spring[] = split[0].split("").map((s) => s as Spring);
     const groups: number[] = split[1].split(",").map((g) => parseInt(g));
-    total += arrangements({ springs: springs, groups: groups }, 0, 0, 0, {});
+    total += farrangements({ springs: springs, groups: groups }, 0, 0, 0);
   });
 
   return total;
 }
 
-// Part 2 is still pretty slow for some reason... :(
 function part2(input: string[]): number {
   let total: number = 0;
 
@@ -92,7 +86,7 @@ function part2(input: string[]): number {
 
     const springs: Spring[] = split[0].split("").map((s) => s as Spring);
     const groups: number[] = split[1].split(",").map((g) => parseInt(g));
-    total += arrangements({ springs: springs, groups: groups }, 0, 0, 0, {});
+    total += farrangements({ springs: springs, groups: groups }, 0, 0, 0);
   });
 
   return total;
