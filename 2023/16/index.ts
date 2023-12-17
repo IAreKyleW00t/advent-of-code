@@ -17,59 +17,34 @@ interface Beam {
   next?: Mirror;
 }
 
-function nextDirections(beam: Beam, mirror: Mirror | undefined): Direction[] {
-  if (!mirror) return [beam.direction];
-  switch (mirror.type) {
-    case "/":
-      switch (beam.direction) {
-        case "U":
-          return ["R"];
-        case "D":
-          return ["L"];
-        case "L":
-          return ["D"];
-        case "R":
-          return ["U"];
-        default:
-          return [beam.direction];
-      }
-    case "\\":
-      switch (beam.direction) {
-        case "U":
-          return ["L"];
-        case "D":
-          return ["R"];
-        case "L":
-          return ["U"];
-        case "R":
-          return ["D"];
-        default:
-          return [beam.direction];
-      }
-    case "|":
-      switch (beam.direction) {
-        case "L" || "R":
-          return ["U", "D"];
-        default:
-          return [beam.direction];
-      }
-    case "-":
-      switch (beam.direction) {
-        case "U" || "D":
-          return ["L", "R"];
-        default:
-          return [beam.direction];
-      }
-    default:
-      return [beam.direction];
+function nextDirections(
+  direction: Direction,
+  mirror: Mirror | undefined
+): Direction[] {
+  if (!mirror) return [direction];
+  if (mirror.type === "/") {
+    if (direction === "U") return ["R"];
+    if (direction === "D") return ["L"];
+    if (direction === "L") return ["D"];
+    if (direction === "R") return ["U"];
+  } else if (mirror.type === "\\") {
+    if (direction === "U") return ["L"];
+    if (direction === "D") return ["R"];
+    if (direction === "L") return ["U"];
+    if (direction === "R") return ["D"];
+  } else if (mirror.type === "|") {
+    if (["L", "R"].includes(direction)) return ["U", "D"];
+  } else if (mirror.type === "-") {
+    if (["U", "D"].includes(direction)) return ["L", "R"];
   }
+  return [direction];
 }
 
 function startBeams(mirrors: Mirror[], initial: Beam): Beam[] {
   const mirror: Mirror | undefined = mirrors
     .filter((m) => m.x === initial.x && m.y === initial.y)
     .pop();
-  return nextDirections(initial, mirror).map((d) => ({
+  return nextDirections(initial.direction, mirror).map((d) => ({
     x: initial.x,
     y: initial.y,
     direction: d,
@@ -77,43 +52,25 @@ function startBeams(mirrors: Mirror[], initial: Beam): Beam[] {
 }
 
 function energize(grid: Grid, beam: Beam, mirror: Mirror | undefined): number {
-  let yedge: number;
-  let xedge: number;
+  let xedge: number = mirror?.x ?? -1;
+  let yedge: number = mirror?.y ?? -1;
+  let count: number = 0; // tiles energized
 
   // handle edges
-  if (!mirror) {
-    switch (beam.direction) {
-      case "U":
-        yedge = 0;
-        xedge = beam.x;
-        break;
-      case "D":
-        yedge = grid.length - 1;
-        xedge = beam.x;
-        break;
-      case "L":
-        yedge = beam.y;
-        xedge = 0;
-        break;
-      case "R":
-        yedge = beam.y;
-        xedge = grid[0].length - 1;
-        break;
+  if (yedge < 0 || xedge < 0) {
+    if (beam.direction === "U") {
+      yedge = 0;
+      xedge = beam.x;
+    } else if (beam.direction === "D") {
+      yedge = grid.length - 1;
+      xedge = beam.x;
+    } else if (beam.direction === "L") {
+      yedge = beam.y;
+      xedge = 0;
+    } else if (beam.direction === "R") {
+      yedge = beam.y;
+      xedge = grid[0].length - 1;
     }
-  } else {
-    yedge = mirror.y;
-    xedge = mirror.x;
-  }
-
-  // number of tiles that were engergized
-  let count: number = 0;
-
-  // change cols
-  const ymin: number = Math.min(beam.y, yedge);
-  const ymax: number = Math.max(beam.y, yedge);
-  for (let i = ymin; i <= ymax; i++) {
-    if (grid[i][beam.x] !== "#") count++;
-    grid[i][beam.x] = "#";
   }
 
   // change rows
@@ -124,6 +81,14 @@ function energize(grid: Grid, beam: Beam, mirror: Mirror | undefined): number {
       count++;
       grid[beam.y][i] = "#";
     }
+  }
+
+  // change cols
+  const ymin: number = Math.min(beam.y, yedge);
+  const ymax: number = Math.max(beam.y, yedge);
+  for (let i = ymin; i <= ymax; i++) {
+    if (grid[i][beam.x] !== "#") count++;
+    grid[i][beam.x] = "#";
   }
   return count;
 }
@@ -142,8 +107,7 @@ function next(beam: Beam, mirrors: Mirror[]): Mirror | undefined {
 }
 
 function beam(grid: Grid, mirrors: Mirror[], beams: Beam[]): number {
-  // find the next location of each beam and energize blocks between
-  const history: string[] = [];
+  const history: Set<string> = new Set<string>();
   let count: number = 0;
   while (beams.length > 0) {
     const b: Beam = beams[0];
@@ -152,7 +116,7 @@ function beam(grid: Grid, mirrors: Mirror[], beams: Beam[]): number {
     // check if we've already been here
     // if so, the beam is a loop an we can stop processing it
     const key: string = `${b.x}:${b.y}:${b.direction}`;
-    if (history.includes(key)) {
+    if (history.has(key)) {
       beams.shift();
       continue;
     }
@@ -160,44 +124,14 @@ function beam(grid: Grid, mirrors: Mirror[], beams: Beam[]): number {
     // energize the grid and then update the beams
     // to move in the new direction(s)
     count += energize(grid, b, b.next);
-    if (b.next?.type === "|") {
-      if (["L", "R"].includes(b.direction)) {
-        // split vertically
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "U" };
-        beams.push({ x: b.next.x, y: b.next.y, direction: "D" });
-      } else {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: b.direction };
-      }
-    } else if (b.next?.type === "-") {
-      if (["U", "D"].includes(b.direction)) {
-        // split horizontally
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "R" };
-        beams.push({ x: b.next.x, y: b.next.y, direction: "L" });
-      } else {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: b.direction };
-      }
-    } else if (b.next?.type === "/") {
-      if (b.direction === "U") {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "R" };
-      } else if (b.direction === "L") {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "D" };
-      } else if (b.direction === "D") {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "L" };
-      } else if (b.direction === "R") {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "U" };
-      }
-    } else if (b.next?.type === "\\") {
-      if (b.direction === "U") {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "L" };
-      } else if (b.direction === "R") {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "D" };
-      } else if (b.direction === "D") {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "R" };
-      } else if (b.direction === "L") {
-        beams[0] = { x: b.next.x, y: b.next.y, direction: "U" };
+    if (b.next) {
+      const d: Direction[] = nextDirections(b.direction, b.next);
+      beams[0] = { x: b.next.x, y: b.next.y, direction: d[0] };
+      if (d.length > 1) {
+        beams.push({ x: b.next.x, y: b.next.y, direction: d[1] });
       }
     } else beams.shift(); // hit edge
-    history.push(key);
+    history.add(key);
   }
   return count;
 }
