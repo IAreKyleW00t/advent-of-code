@@ -151,7 +151,7 @@ function beam(grid: Grid, mirrors: Mirror[], beams: Beam[]): number {
 
     // check if we've already been here
     // if so, the beam is a loop an we can stop processing it
-    const key: string = `${b.next?.type}${b.x}${b.y}${b.direction}`;
+    const key: string = `${b.x}:${b.y}:${b.direction}`;
     if (history.includes(key)) {
       beams.shift();
       continue;
