@@ -30,6 +30,8 @@ function nextDirections(beam: Beam, mirror: Mirror | undefined): Direction[] {
           return ["D"];
         case "R":
           return ["U"];
+        default:
+          return [beam.direction];
       }
     case "\\":
       switch (beam.direction) {
@@ -41,6 +43,8 @@ function nextDirections(beam: Beam, mirror: Mirror | undefined): Direction[] {
           return ["U"];
         case "R":
           return ["D"];
+        default:
+          return [beam.direction];
       }
     case "|":
       switch (beam.direction) {
@@ -56,12 +60,13 @@ function nextDirections(beam: Beam, mirror: Mirror | undefined): Direction[] {
         default:
           return [beam.direction];
       }
+    default:
+      return [beam.direction];
   }
-  return ["D"];
 }
 
 function startBeams(mirrors: Mirror[], initial: Beam): Beam[] {
-  let mirror: Mirror | undefined = mirrors
+  const mirror: Mirror | undefined = mirrors
     .filter((m) => m.x === initial.x && m.y === initial.y)
     .pop();
   return nextDirections(initial, mirror).map((d) => ({
@@ -104,23 +109,22 @@ function energize(grid: Grid, beam: Beam, mirror: Mirror | undefined): number {
   let count: number = 0;
 
   // change cols
-  let ymin: number = Math.min(beam.y, yedge);
-  let ymax: number = Math.max(beam.y, yedge);
+  const ymin: number = Math.min(beam.y, yedge);
+  const ymax: number = Math.max(beam.y, yedge);
   for (let i = ymin; i <= ymax; i++) {
     if (grid[i][beam.x] !== "#") count++;
     grid[i][beam.x] = "#";
   }
 
   // change rows
-  let xmin: number = Math.min(beam.x, xedge);
-  let xmax: number = Math.max(beam.x, xedge);
+  const xmin: number = Math.min(beam.x, xedge);
+  const xmax: number = Math.max(beam.x, xedge);
   for (let i = xmin; i <= xmax; i++) {
     if (grid[beam.y][i] !== "#") {
       count++;
       grid[beam.y][i] = "#";
     }
   }
-
   return count;
 }
 
@@ -142,18 +146,19 @@ function beam(grid: Grid, mirrors: Mirror[], beams: Beam[]): number {
   const history: string[] = [];
   let count: number = 0;
   while (beams.length > 0) {
-    let b: Beam = beams[0];
+    const b: Beam = beams[0];
     b.next = next(b, mirrors);
 
-    //pprint(grid);
-
     // check if we've already been here
+    // if so, the beam is a loop an we can stop processing it
     const key: string = `${b.next?.type}${b.x}${b.y}${b.direction}`;
     if (history.includes(key)) {
       beams.shift();
       continue;
     }
 
+    // energize the grid and then update the beams
+    // to move in the new direction(s)
     count += energize(grid, b, b.next);
     if (b.next?.type === "|") {
       if (["L", "R"].includes(b.direction)) {
@@ -191,11 +196,9 @@ function beam(grid: Grid, mirrors: Mirror[], beams: Beam[]): number {
       } else if (b.direction === "L") {
         beams[0] = { x: b.next.x, y: b.next.y, direction: "U" };
       }
-    } else beams.shift();
-
+    } else beams.shift(); // hit edge
     history.push(key);
   }
-
   return count;
 }
 
@@ -213,9 +216,9 @@ function part1(input: string[]): number {
     });
   });
 
-  // Create the initial beam in the top-left based on the mirrors that could be there
+  // initial beam in the top-left, accounting for mirrors
   const initial: Beam = { x: 0, y: 0, direction: "R" };
-  let beams: Beam[] = startBeams(mirrors, initial);
+  const beams: Beam[] = startBeams(mirrors, initial);
   return beam(grid, mirrors, beams);
 }
 
@@ -233,8 +236,8 @@ function part2(input: string[]): number {
     });
   });
 
-  // Create a beam on that starts at the edge of each colum and row on the grid
-  let engergized: number[] = [];
+  // initial beam at each column and row, accounting for mirrors
+  const engergized: number[] = [];
   for (let i = 0; i < grid[0].length; i++) {
     // top
     let g: Grid = JSON.parse(JSON.stringify(grid));
