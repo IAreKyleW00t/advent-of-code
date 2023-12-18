@@ -21,6 +21,10 @@ interface Plan {
   length: number;
 }
 
+function mulCoordinate(a: Coordinate, b: number): Coordinate {
+  return [a[0] * b, a[1] * b];
+}
+
 function addCoordinates(a: Coordinate, b: Coordinate): Coordinate {
   return [a[0] + b[0], a[1] + b[1]];
 }
@@ -43,13 +47,7 @@ function picks(coords: Coordinate[], perimeter: number): number {
 }
 
 function dig(plan: Plan, pos: Coordinate): Coordinate {
-  let length: number = plan.length;
-  let newPos: Coordinate = pos;
-  while (length > 0) {
-    newPos = addCoordinates(newPos, plan.direction);
-    length--;
-  }
-  return newPos;
+  return addCoordinates(pos, mulCoordinate(plan.direction, plan.length));
 }
 
 function part1(input: string[]): number {
