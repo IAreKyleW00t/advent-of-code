@@ -16,13 +16,10 @@ function calculatePower(boxes: Box[]): number {
   let total: number = 0;
   boxes.forEach((box, i) => {
     if (box.length === 0) return; // skip empty boxes
-
-    box.forEach((lens, j) => {
-      let power: number = i + 1;
-      power *= j + 1;
-      power *= lens.focal;
-      total += power;
-    });
+    total += box.reduce(
+      (power, lens, j) => (power += (i + 1) * (j + 1) * lens.focal),
+      0
+    );
   });
   return total;
 }
