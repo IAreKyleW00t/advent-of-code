@@ -4,12 +4,11 @@ function compare(a: string[], b: string[]): number {
   return a.filter((v, i) => b[i] !== v).length;
 }
 
-// rotates 90 degrees to the right
 function transpose(m: string[][]): string[][] {
   return m[0].map((_, col) => m.map((row) => row[col]));
 }
 
-function reflections(pattern: string[][], line: number): number {
+function reflect(pattern: string[][], line: number): number {
   // move forward because a reflection is not 32123, it's 321123
   // so we need to account for the extra line
   line += 1;
@@ -27,23 +26,24 @@ function reflections(pattern: string[][], line: number): number {
     unmatched += compare(pattern[i], pattern[distance]);
   }
 
-  // divide by 2 because the loop will
+  // divide by 2 because the loop is accounting for both
+  // above and below at the same time.
   return unmatched / 2;
 }
 
-function reflect(pattern: string[][], smudges: number = 0): number {
+function reflections(pattern: string[][], smudges: number = 0): number {
   let total: number = 0;
 
   // horizontal
   for (let i = 0; i < pattern.length - 1; i++) {
-    const r: number = reflections(pattern, i);
+    const r: number = reflect(pattern, i);
     if (r === smudges) total += 100 * (i + 1);
   }
 
   // rotate matrix and then recheck "vertical"
   const t: string[][] = transpose(pattern);
   for (let i = 0; i < t.length - 1; i++) {
-    const r: number = reflections(t, i);
+    const r: number = reflect(t, i);
     if (r === smudges) total += i + 1;
   }
   return total;
@@ -63,7 +63,7 @@ function part1(input: string[]): number {
     patterns[pcount].push(line.split(""));
   });
 
-  return patterns.reduce((sum, pattern) => (sum += reflect(pattern, 0)), 0);
+  return patterns.reduce((sum, pattern) => (sum += reflections(pattern, 0)), 0);
 }
 
 function part2(input: string[]): number {
@@ -80,7 +80,7 @@ function part2(input: string[]): number {
     patterns[pcount].push(line.split(""));
   });
 
-  return patterns.reduce((sum, pattern) => (sum += reflect(pattern, 1)), 0);
+  return patterns.reduce((sum, pattern) => (sum += reflections(pattern, 1)), 0);
 }
 
 const stdin: string[] = fs.readFileSync(0).toString().split(/\r?\n/);
