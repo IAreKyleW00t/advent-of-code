@@ -62,9 +62,7 @@ function addAdjacentNumber(board: string[][], x: number, y: number): number {
         numbers.push(parseNumber(board, i, y - 1));
       }
     }
-  }
 
-  for (let i = x - 1; i <= x + 1; i++) {
     // below
     if (y + 1 < board.length && i >= 0 && i < board[0].length) {
       const val = board[y + 1][i];
