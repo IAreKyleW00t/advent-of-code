@@ -1,18 +1,22 @@
 import * as fs from "fs";
 
-function calculateWins(time: number, distance: number): number[] {
-  const wins: number[] = [];
-  for (let i = 1; i < time; i++) {
-    if ((time - i) * i > distance) wins.push(i);
-  }
-  return wins;
+// quadradic formula to calculate the min and max time needed to be pressed
+// (time - held) * held = distance => -held^2 + held * time - distance = 0
+function calculate(time: number, distance: number): [number, number] {
+  // d = b^2 - 4ac => time^2 - 4 * distance
+  const d: number = Math.sqrt(time ** 2 - 4 * distance);
+
+  // held = (-b +/- sqrt(d) / 2)
+  const a: number = (time - d) / 2; // min
+  const b: number = (time + d) / 2; // max
+  return [Math.ceil(a), Math.floor(b)];
 }
 
 function calculateTotal(times: number[], distances: number[]): number {
   let total: number = 1;
   for (let i = 0; i < times.length; i++) {
-    const wins = calculateWins(times[i], distances[i]);
-    total *= wins.length;
+    const wins = calculate(times[i], distances[i]);
+    total *= wins[1] - wins[0] + 1;
   }
   return total;
 }
