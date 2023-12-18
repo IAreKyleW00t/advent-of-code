@@ -65,30 +65,35 @@ function part1(input: string[]): number {
 }
 
 function part2(input: string[]): number {
-  const all_cards: Card[][] = [];
+  const cards: number[] = [];
 
   input.forEach((line) => {
     if (!line) return; // skip empty lines
 
     const id = parseCardId(line);
     const card = parseCard(id, line);
-    all_cards[id - 1] = [card];
+
+    // if we have encountered a copy of this card already, just add
+    // set what the card is and add 1, otherwise add it in fresh.
+    if (id - 1 in cards) cards[id - 1] = cards[id - 1] + 1;
+    else cards[id - 1] = 1;
+
+    // if we match any cards increment the count of those
+    // cards by the number of these cards we have.
+    const matches = getMatchingNumbers(card);
+    if (matches) {
+      [...Array(matches.length).keys()]
+        .map((i) => i + id)
+        .forEach((m) => {
+          // if we haven't seen the card yet, then it will
+          // have the same number of copies as the current card by default.
+          if (!(m in cards)) cards[m] = cards[id - 1];
+          else cards[m] += cards[id - 1];
+        });
+    }
   });
 
-  all_cards.forEach((cards) => {
-    cards.forEach((card) => {
-      const matches = getMatchingNumbers(card);
-      if (matches) {
-        [...Array(matches.length).keys()]
-          .map((i) => i + card.id)
-          .forEach((m) => {
-            all_cards[m].push(all_cards[m][0]);
-          });
-      } else return;
-    });
-  });
-
-  return all_cards.reduce((sum, curr) => (sum += curr.length), 0);
+  return cards.reduce((sum, curr) => (sum += curr), 0);
 }
 
 const stdin: string[] = fs.readFileSync(0).toString().split(/\r?\n/);
