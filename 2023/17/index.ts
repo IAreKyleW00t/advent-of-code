@@ -2,7 +2,7 @@ import * as fs from "fs";
 import { Heap } from "heap-js";
 
 type Grid = number[][];
-type Coordinate = [number, number];
+type Coordinate = [number, number]; // [x, y]
 
 class Direction {
   static UP: Coordinate = [0, -1];
