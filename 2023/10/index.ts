@@ -1,7 +1,20 @@
 import * as fs from "fs";
 
 type TileType = "|" | "-" | "L" | "J" | "7" | "F" | "." | "S";
-type Coordinate = [number, number];
+type Coordinate = [number, number]; // [x, y]
+
+class Direction {
+  static UP: Coordinate = [0, -1];
+  static DOWN: Coordinate = [0, 1];
+  static LEFT: Coordinate = [-1, 0];
+  static RIGHT: Coordinate = [1, 0];
+  static all(): Coordinate[] {
+    return [this.UP, this.DOWN, this.LEFT, this.RIGHT];
+  }
+  static add(a: Coordinate, b: Coordinate): Coordinate {
+    return [a[0] + b[0], a[1] + b[1]];
+  }
+}
 
 interface Tile {
   coords: Coordinate;
@@ -16,25 +29,6 @@ class Grid {
   path: Tile[] = [];
   prevCorner: Tile | undefined;
 
-  add(tile: Tile, x: number, y: number): void {
-    if (tile.type === "S") this.start = tile;
-    if (!this.tiles[y]) this.tiles[y] = [];
-    this.tiles[y][x] = tile;
-  }
-
-  validCoordinates(coords: Coordinate): boolean {
-    return (
-      coords[0] >= 0 &&
-      coords[0] < this.tiles.length &&
-      coords[1] >= 0 &&
-      coords[1] < this.tiles[coords[0]].length
-    );
-  }
-
-  validStep(tile: Tile, types: TileType[] = ["."]): boolean {
-    return !types.includes(tile.type) && !tile.visited;
-  }
-
   // Shoelace theorem (triangle formula)
   // https://en.wikipedia.org/wiki/Shoelace_formula
   area(): number {
@@ -42,8 +36,8 @@ class Grid {
     for (let i = 0; i < this.path.length; i++) {
       const j: number = (i + 1) % this.path.length;
       sum +=
-        this.path[i].coords[1] * this.path[j].coords[0] -
-        this.path[i].coords[0] * this.path[j].coords[1];
+        this.path[i].coords[0] * this.path[j].coords[1] -
+        this.path[i].coords[1] * this.path[j].coords[0];
     }
     return sum / 2;
   }
@@ -54,108 +48,83 @@ class Grid {
     return this.area() - this.path.length / 2 + 1;
   }
 
-  step(from: Tile): Tile {
-    const y = from.coords[0];
-    const x = from.coords[1];
-    let next: Tile, prev: Tile;
-    switch (from.type) {
-      case "|":
-        // up
-        if (this.validCoordinates([y - 1, x])) {
-          prev = this.tiles[y - 1][x];
-          if (this.validStep(prev)) return prev;
-        }
-        // down
-        if (this.validCoordinates([y + 1, x])) {
-          next = this.tiles[y + 1][x];
-          if (this.validStep(next)) return next;
-        }
-        break;
-      case "-":
-        /// left
-        if (this.validCoordinates([y, x - 1])) {
-          prev = this.tiles[y][x - 1];
-          if (this.validStep(prev)) return prev;
-        }
-        // right
-        if (this.validCoordinates([y, x + 1])) {
-          next = this.tiles[y][x + 1];
-          if (this.validStep(next)) return next;
-        }
-        break;
-      case "L":
-        // up
-        if (this.validCoordinates([y - 1, x])) {
-          next = this.tiles[y - 1][x];
-          if (this.validStep(next)) return next;
-        }
-        // left
-        if (this.validCoordinates([y, x + 1])) {
-          prev = this.tiles[y][x + 1];
-          if (this.validStep(prev)) return prev;
-        }
-        break;
-      case "J":
-        // up
-        if (this.validCoordinates([y - 1, x])) {
-          next = this.tiles[y - 1][x];
-          if (this.validStep(next)) return next;
-        }
-        // right
-        if (this.validCoordinates([y, x - 1])) {
-          prev = this.tiles[y][x - 1];
-          if (this.validStep(prev)) return prev;
-        }
-        break;
-      case "7":
-        // right
-        if (this.validCoordinates([y, x - 1])) {
-          next = this.tiles[y][x - 1];
-          if (this.validStep(next)) return next;
-        }
-        // down
-        if (this.validCoordinates([y + 1, x])) {
-          prev = this.tiles[y + 1][x];
-          if (this.validStep(prev)) return prev;
-        }
-        break;
-      case "F":
-        // left
-        if (this.validCoordinates([y, x + 1])) {
-          next = this.tiles[y][x + 1];
-          if (this.validStep(next)) return next;
-        }
-        // down
-        if (this.validCoordinates([y + 1, x])) {
-          prev = this.tiles[y + 1][x];
-          if (this.validStep(prev)) return prev;
-        }
-        break;
-      case "S":
-        // up/down
-        if (this.validCoordinates([y + 1, x])) {
-          next = this.tiles[y + 1][x];
-          if (this.validStep(next, [".", "7", "F"])) return next;
-        }
-        if (this.validCoordinates([y - 1, x])) {
-          prev = this.tiles[y - 1][x];
-          if (this.validStep(prev, [".", "L", "J"])) return prev;
-        }
+  add(tile: Tile, x: number, y: number): void {
+    if (tile.type === "S") this.start = tile;
+    if (!this.tiles[y]) this.tiles[y] = [];
+    this.tiles[y][x] = tile;
+  }
 
-        // left/right
-        if (this.validCoordinates([y, x + 1])) {
-          next = this.tiles[y][x + 1];
-          if (this.validStep(next, [".", "|", "F"])) return next;
-        }
-        if (this.validCoordinates([y, x - 1])) {
-          prev = this.tiles[y][x - 1];
-          if (this.validStep(prev, [".", "-", "J"])) return prev;
-        }
-        break;
-      default:
-        return this.tiles[y][x];
+  validCoordinates(coords: Coordinate): boolean {
+    return (
+      coords[1] >= 0 &&
+      coords[1] < this.tiles.length &&
+      coords[0] >= 0 &&
+      coords[0] < this.tiles[coords[1]].length
+    );
+  }
+
+  validStep(tile: Tile, types: TileType[] = ["."]): boolean {
+    return !types.includes(tile.type) && !tile.visited;
+  }
+
+  tryStep(coords: Coordinate, invalid?: TileType[]): Tile | undefined {
+    if (this.validCoordinates(coords)) {
+      const next: Tile = this.tiles[coords[1]][coords[0]];
+      if (this.validStep(next, invalid)) return next;
     }
-    return from; // move no where
+  }
+
+  step(from: Tile): Tile {
+    let next: Tile | undefined;
+    if (from.type === "|") {
+      // up/down
+      next = this.tryStep(Direction.add(from.coords, Direction.UP));
+      if (next) return next;
+      next = this.tryStep(Direction.add(from.coords, Direction.DOWN));
+      if (next) return next;
+    } else if (from.type === "-") {
+      // left/right
+      next = this.tryStep(Direction.add(from.coords, Direction.LEFT));
+      if (next) return next;
+      next = this.tryStep(Direction.add(from.coords, Direction.RIGHT));
+      if (next) return next;
+    } else if (from.type === "L") {
+      // up/right
+      next = this.tryStep(Direction.add(from.coords, Direction.UP));
+      if (next) return next;
+      next = this.tryStep(Direction.add(from.coords, Direction.RIGHT));
+      if (next) return next;
+    } else if (from.type === "J") {
+      // up/left
+      next = this.tryStep(Direction.add(from.coords, Direction.UP));
+      if (next) return next;
+      next = this.tryStep(Direction.add(from.coords, Direction.LEFT));
+      if (next) return next;
+    } else if (from.type === "7") {
+      // left/down
+      next = this.tryStep(Direction.add(from.coords, Direction.LEFT));
+      if (next) return next;
+      next = this.tryStep(Direction.add(from.coords, Direction.DOWN));
+      if (next) return next;
+    } else if (from.type === "F") {
+      // right/down
+      next = this.tryStep(Direction.add(from.coords, Direction.RIGHT));
+      if (next) return next;
+      next = this.tryStep(Direction.add(from.coords, Direction.DOWN));
+      if (next) return next;
+    } else if (from.type === "S") {
+      // up/down/left/right
+      next = this.tryStep(Direction.add(from.coords, Direction.UP));
+      if (next) return next;
+      next = this.tryStep(Direction.add(from.coords, Direction.DOWN));
+      if (next) return next;
+      next = this.tryStep(Direction.add(from.coords, Direction.LEFT));
+      if (next) return next;
+      next = this.tryStep(Direction.add(from.coords, Direction.RIGHT));
+      if (next) return next;
+    }
+
+    return from; // invalid, move no where
   }
 
   walk(): number {
@@ -176,7 +145,7 @@ function part1(input: string[]): number {
     if (!line) return; // skip empty lines
 
     line.split("").forEach((char, x) => {
-      const tile = { coords: [y, x] as Coordinate, type: char as TileType };
+      const tile = { coords: [x, y] as Coordinate, type: char as TileType };
       grid.add(tile, x, y);
     });
   });
@@ -191,7 +160,7 @@ function part2(input: string[]): number {
     if (!line) return; // skip empty lines
 
     line.split("").forEach((char, x) => {
-      const tile = { coords: [y, x] as Coordinate, type: char as TileType };
+      const tile = { coords: [x, y] as Coordinate, type: char as TileType };
       grid.add(tile, x, y);
     });
   });
