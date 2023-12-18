@@ -21,7 +21,7 @@ https://adventofcode.com/2023
 | 15  | ${\color{yellow}★★}$ | TypeScript |
 | 16  | ${\color{yellow}★★}$ | TypeScript |
 | 17  | ${\color{yellow}★★}$ | TypeScript |
-| 18  |  ${\color{gray}★★}$  |            |
+| 18  | ${\color{yellow}★★}$ | TypeScript |
 | 19  |  ${\color{gray}★★}$  |            |
 | 20  |  ${\color{gray}★★}$  |            |
 | 21  |  ${\color{gray}★★}$  |            |
