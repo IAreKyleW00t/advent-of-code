@@ -47,16 +47,31 @@ class Universe {
     });
   }
 
+  distance(a: Coordinate, b: Coordinate): number {
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+  }
+
   travel(a: Coordinate, b: Coordinate, multiplier: number = 1): number {
-    let distance: number = 0;
-    for (let i = Math.min(a.y, b.y); i < Math.max(a.y, b.y); i++) {
-      if (this.expandedRows.includes(i)) distance += multiplier;
-      else distance += 1;
-    }
-    for (let i = Math.min(a.x, b.x); i < Math.max(a.x, b.x); i++) {
-      if (this.expandedCols.includes(i)) distance += multiplier;
-      else distance += 1;
-    }
+    // start with the normal distance between galaxies
+    let distance: number = this.distance(a, b);
+
+    // check if we would have crossed any expanded rows
+    this.expandedRows.forEach((i) => {
+      const ymin: number = Math.min(a.y, b.y);
+      const ymax: number = Math.max(a.y, b.y);
+      if (i >= ymin && i <= ymax) {
+        distance += multiplier - 1;
+      }
+    });
+
+    // check if we would have crossed any expanded cols
+    this.expandedCols.forEach((i) => {
+      const xmin: number = Math.min(a.x, b.x);
+      const xmax: number = Math.max(a.x, b.x);
+      if (i >= xmin && i <= xmax) {
+        distance += multiplier - 1;
+      }
+    });
     return distance;
   }
 
