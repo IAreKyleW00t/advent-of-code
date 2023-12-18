@@ -73,8 +73,9 @@ function part2(input: string[]): number {
     const id = parseCardId(line);
     const card = parseCard(id, line);
 
-    // if we have encountered a copy of this card already, just add
-    // set what the card is and add 1, otherwise add it in fresh.
+    // if we have seen the original of this card already, just add to it.
+    // otherwise start by setting it to 1, since that is the only occurrence
+    // of that card so far.
     if (id - 1 in cards) cards[id - 1] = cards[id - 1] + 1;
     else cards[id - 1] = 1;
 
@@ -85,8 +86,8 @@ function part2(input: string[]): number {
       [...Array(matches.length).keys()]
         .map((i) => i + id)
         .forEach((m) => {
-          // if we haven't seen the card yet, then it will
-          // have the same number of copies as the current card by default.
+          // if we haven't seen the card yet, then it will have the same
+          // number of copies as the current card, since each card will make a copy.
           if (!(m in cards)) cards[m] = cards[id - 1];
           else cards[m] += cards[id - 1];
         });
