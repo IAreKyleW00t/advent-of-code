@@ -6,6 +6,7 @@ class Prediction {
   constructor(values: number[]) {
     this.values = [values];
 
+    // fill rows with differences from initial values
     let diff: number = 1;
     while (diff > 0) {
       this.values[diff] = [];
@@ -18,29 +19,25 @@ class Prediction {
     }
   }
 
-  next(next: number = 1): number {
-    while (next--) {
-      for (let i = this.values.length - 1; i >= 0; i--) {
-        const len = this.values[i].length;
-        if (this.values[i].filter((num) => num !== 0).length === 0) {
-          this.values[i][len] = 0;
-        } else {
-          this.values[i][len] =
-            this.values[i + 1][len - 1] + this.values[i][len - 1];
-        }
+  next(): number {
+    for (let i = this.values.length - 1; i >= 0; i--) {
+      const len = this.values[i].length;
+      if (this.values[i].filter((num) => num !== 0).length === 0) {
+        this.values[i][len] = 0;
+      } else {
+        this.values[i][len] =
+          this.values[i + 1][len - 1] + this.values[i][len - 1];
       }
     }
     return this.values[0][this.values[0].length - 1];
   }
 
-  prev(prev: number = 1): number {
-    while (prev--) {
-      for (let i = this.values.length - 1; i >= 0; i--) {
-        if (this.values[i].filter((num) => num !== 0).length === 0) {
-          this.values[i].unshift(0);
-        } else {
-          this.values[i].unshift(this.values[i][0] - this.values[i + 1][0]);
-        }
+  prev(): number {
+    for (let i = this.values.length - 1; i >= 0; i--) {
+      if (this.values[i].filter((num) => num !== 0).length === 0) {
+        this.values[i].unshift(0);
+      } else {
+        this.values[i].unshift(this.values[i][0] - this.values[i + 1][0]);
       }
     }
     return this.values[0][0];
