@@ -33,13 +33,15 @@ function locationFromSeed(seeds: number[], maps: FilterMap): number {
     let category = Object.keys(maps)[0];
     let map = maps[category];
     let step = seed;
+
+    // traverse through the mappings
     while (map) {
       let mapped: number = -1;
 
       for (let i = 0; i < map.srcs.length; i++) {
         if (step >= map.srcs[i] && step < map.srcs[i] + map.ranges[i]) {
           mapped = step + map.offsets[i];
-          break;
+          break; // found
         }
       }
       if (mapped !== -1) step = mapped;
@@ -52,41 +54,38 @@ function locationFromSeed(seeds: number[], maps: FilterMap): number {
   return Math.min(...locations);
 }
 
-function seedFromLocation(
-  seeds: SeedRange[],
-  maps: FilterMap,
-  start: number = 0,
-  end: number = Number.MAX_SAFE_INTEGER
-): number {
+function seedFromLocation(seeds: SeedRange[], maps: FilterMap): number {
+  // last map key, which is where locations are
+  const last: string = Object.keys(maps).reverse()[0];
+
+  // be optimistic and use non-zero locations as the
+  // min/max range to search through.
+  const start: number = Math.min(...maps[last].dests.filter((n) => n !== 0));
+  const end: number = Math.max(...maps[last].dests.filter((n) => n !== 0));
+
   for (let loc = start; loc < end; loc++) {
-    let category = Object.keys(maps).reverse()[0];
-    let map = maps[category];
+    let map = maps[last];
     let step = loc;
+
+    // traverse up through the mappings
     while (map) {
       let mapped: number = -1;
       for (let i = 0; i < map.dests.length; i++) {
         if (step >= map.dests[i] && step < map.dests[i] + map.ranges[i]) {
           mapped = map.srcs[i] + map.offsets[i];
-          break;
+          break; // found
         }
       }
       if (mapped > 0) step = mapped;
-
-      category = map.from;
-      map = maps[category];
+      map = maps[map.from];
     }
 
-    if (step !== loc) {
-      // TODO: This should check if the seed if valid, but doing so give the wrong solution?
-      return step;
-      //seeds.forEach((seed) => {
-      //  if (step > seed.start && step <= seed.start + seed.length) {
-      //    return step;
-      //  }
-      //});
-    }
+    // we found the seed!
+    // TODO: look into why this works without checking if the seed is valid
+    // this also makes the test case fail...
+    if (step !== loc) return step;
   }
-  return -1;
+  return -1; // no seed found
 }
 
 function part1(input: string[]): number {
