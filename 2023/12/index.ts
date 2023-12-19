@@ -1,25 +1,16 @@
 import * as fs from "fs";
 import memoize from "fast-memoize";
 
-type Spring = "." | "#" | "?";
-
-interface Record {
-  springs: Spring[];
-  groups: number[];
-}
-
 // si = current position in springs[]
 // gi = current position in groups[]
 // length = length of current series of '#' in springs
 function arrangements(
-  record: Record,
+  springs: string[],
+  groups: number[],
   si: number,
   gi: number,
   length: number
 ): number {
-  const springs = record.springs;
-  const groups = record.groups;
-
   // we're done looking through all characters, we are at the end
   if (si === springs.length) {
     // all groups have been matched, done
@@ -32,11 +23,11 @@ function arrangements(
 
   // try to replace ? with . and # recall the function
   let paths: number = 0;
-  ["." as Spring, "#" as Spring].forEach((c) => {
+  [".", "#"].forEach((c) => {
     if (springs[si] === c || springs[si] === "?") {
       if (c === "." && length === 0) {
         // no active group, so just keep moving forward
-        paths += farrangements(record, si + 1, gi, 0);
+        paths += farrangements(springs, groups, si + 1, gi, 0);
       } else if (
         c === "." &&
         length > 0 &&
@@ -45,10 +36,10 @@ function arrangements(
       ) {
         // current group is successfully matched
         // start matching next group and beginning looking for it
-        paths += farrangements(record, si + 1, gi + 1, 0);
+        paths += farrangements(springs, groups, si + 1, gi + 1, 0);
       } else if (c === "#") {
         // increase length of group section and keep moving
-        paths += farrangements(record, si + 1, gi, length + 1);
+        paths += farrangements(springs, groups, si + 1, gi, length + 1);
       }
     }
   });
@@ -66,9 +57,9 @@ function part1(input: string[]): number {
     if (!line) return; // skip empty lines
 
     const split = line.split(" ");
-    const springs: Spring[] = split[0].split("").map((s) => s as Spring);
+    const springs: string[] = split[0].split("").map((s) => s);
     const groups: number[] = split[1].split(",").map((g) => parseInt(g));
-    total += farrangements({ springs: springs, groups: groups }, 0, 0, 0);
+    total += farrangements(springs, groups, 0, 0, 0);
   });
 
   return total;
@@ -84,9 +75,9 @@ function part2(input: string[]): number {
     split[0] = [split[0], split[0], split[0], split[0], split[0]].join("?");
     split[1] = [split[1], split[1], split[1], split[1], split[1]].join(",");
 
-    const springs: Spring[] = split[0].split("").map((s) => s as Spring);
+    const springs: string[] = split[0].split("").map((s) => s);
     const groups: number[] = split[1].split(",").map((g) => parseInt(g));
-    total += farrangements({ springs: springs, groups: groups }, 0, 0, 0);
+    total += farrangements(springs, groups, 0, 0, 0);
   });
 
   return total;
