@@ -28,10 +28,10 @@ interface SeedRange {
 }
 
 function locationFromSeed(seeds: number[], maps: FilterMap): number {
+  const first: string = Object.keys(maps)[0];
   const locations: number[] = [];
   seeds.forEach((seed) => {
-    let category = Object.keys(maps)[0];
-    let map = maps[category];
+    let map = maps[first];
     let step = seed;
 
     // traverse through the mappings
@@ -45,9 +45,7 @@ function locationFromSeed(seeds: number[], maps: FilterMap): number {
         }
       }
       if (mapped !== -1) step = mapped;
-
-      category = map.to;
-      map = maps[category];
+      map = maps[map.to];
     }
     locations.push(step);
   });
@@ -55,7 +53,6 @@ function locationFromSeed(seeds: number[], maps: FilterMap): number {
 }
 
 function seedFromLocation(seeds: SeedRange[], maps: FilterMap): number {
-  // last map key, which is where locations are
   const last: string = Object.keys(maps).reverse()[0];
 
   // be optimistic and use non-zero locations as the
