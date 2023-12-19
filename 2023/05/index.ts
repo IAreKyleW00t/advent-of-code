@@ -1,166 +1,136 @@
 import * as fs from "fs";
 
-class Filter {
-  to: string;
-  from: string;
-  srcs: number[];
-  dests: number[];
-  ranges: number[];
-  offsets: number[];
+type FilterItem = [number, number, number]; // [dest, src, range]
+type Range = [number, number]; // [start, end]
 
-  constructor(to: string, from: string) {
-    this.to = to;
-    this.from = from;
-    this.srcs = [];
-    this.dests = [];
-    this.ranges = [];
-    this.offsets = [];
+class Filter {
+  maps: FilterItem[] = [];
+
+  // parse block of text into filter items
+  constructor(chunk: string[]) {
+    chunk.forEach((line) => {
+      const split: number[] = line.split(" ").map((s) => parseInt(s));
+      this.maps.push([split[0], split[1], split[2]]);
+    });
+  }
+
+  // runs a seed through the filter
+  // and outputs its new mapped value
+  map(seed: number): number {
+    for (let i = 0; i < this.maps.length; i++) {
+      const dest: number = this.maps[i][0];
+      const src: number = this.maps[i][1];
+      const range: number = this.maps[i][2];
+      if (src <= seed && seed < src + range) return seed + dest - src;
+    }
+    return seed; // doesn't map to anything
+  }
+
+  // runs a seed range through the filter
+  // and outputs the possible locations it can hit
+  map_range(ranges: Range[]): Range[] {
+    const filtered: Range[] = [];
+    for (let i = 0; i < this.maps.length; i++) {
+      const dest: number = this.maps[i][0];
+      const src: number = this.maps[i][1];
+      const range: number = this.maps[i][2];
+
+      // these seeds that may not fit in this mapping
+      // but could belong to another, so hold onto them
+      const queue: Range[] = [];
+      while (ranges.length > 0) {
+        const s: Range = ranges.pop()!;
+        const start: number = s[0];
+        const end: number = s[1];
+
+        // [start                        end] <- large seed search
+        //         [src     src+range]        <- valid seeds for the mapping
+        // [before][      inner      ][after] <- "filtered" seeds
+        // before/after = everything outside the range for the mapping
+        // inner = what fits in the range and will be processed
+        const before: Range = [start, Math.min(end, src)];
+        const inner: Range = [Math.max(start, src), Math.min(src + range, end)];
+        const after: Range = [Math.max(src + range, start), end];
+
+        // outside of valid range, save for later
+        if (before[1] > before[0]) queue.push(before);
+
+        // inside range, so process it
+        if (inner[1] > inner[0]) {
+          filtered.push([inner[0] - src + dest, inner[1] - src + dest]);
+        }
+
+        // also outside of range
+        if (after[1] > after[0]) queue.push(after);
+      }
+
+      // move the queue to the list of ranges to be processed
+      ranges = queue;
+    }
+
+    return [...filtered, ...ranges];
   }
 }
 
-interface FilterMap {
-  [key: string]: Filter;
-}
+function part1(input: string[]): number {
+  let seeds: number[] = [];
+  const filters: Filter[] = [];
+  input.forEach((chunk) => {
+    // slice(1) each chunk to remove the header row
+    if (chunk.match(/^seeds:.+$/)) {
+      seeds = chunk
+        .split(" ")
+        .slice(1)
+        .map((s) => parseInt(s));
+    } else if (chunk.match(/^.+map:/)) {
+      filters.push(new Filter(chunk.split(/\r?\n/).slice(1)));
+    }
+  });
 
-interface SeedRange {
-  start: number;
-  length: number;
-}
-
-function locationFromSeed(seeds: number[], maps: FilterMap): number {
-  const first: string = Object.keys(maps)[0];
   const locations: number[] = [];
   seeds.forEach((seed) => {
-    let map = maps[first];
-    let step = seed;
-
-    // traverse through the mappings
-    while (map) {
-      let mapped: number = -1;
-
-      for (let i = 0; i < map.srcs.length; i++) {
-        if (step >= map.srcs[i] && step < map.srcs[i] + map.ranges[i]) {
-          mapped = step + map.offsets[i];
-          break; // found
-        }
-      }
-      if (mapped !== -1) step = mapped;
-      map = maps[map.to];
-    }
-    locations.push(step);
+    filters.forEach((fn) => (seed = fn.map(seed)));
+    locations.push(seed);
   });
   return Math.min(...locations);
 }
 
-function seedFromLocation(seeds: SeedRange[], maps: FilterMap): number {
-  const last: string = Object.keys(maps).reverse()[0];
-
-  // be optimistic and use non-zero locations as the
-  // min/max range to search through.
-  const start: number = Math.min(...maps[last].dests.filter((n) => n !== 0));
-  const end: number = Math.max(...maps[last].dests.filter((n) => n !== 0));
-
-  for (let loc = start; loc < end; loc++) {
-    let map = maps[last];
-    let step = loc;
-
-    // traverse up through the mappings
-    while (map) {
-      let mapped: number = -1;
-      for (let i = 0; i < map.dests.length; i++) {
-        if (step >= map.dests[i] && step < map.dests[i] + map.ranges[i]) {
-          mapped = map.srcs[i] + map.offsets[i];
-          break; // found
-        }
-      }
-      if (mapped > 0) step = mapped;
-      map = maps[map.from];
-    }
-
-    // we found the seed!
-    // TODO: look into why this works without checking if the seed is valid
-    // this also makes the test case fail...
-    if (step !== loc) return step;
-  }
-  return -1; // no seed found
-}
-
-function part1(input: string[]): number {
-  const seeds: number[] = [];
-  const maps: FilterMap = {};
-  let category: string;
-
-  input.forEach((line) => {
-    if (!line) return; // skip empty lines
-
-    if (line.match(/^seeds:.+$/)) {
-      line.match(/\d+/g)?.map((num) => seeds.push(parseInt(num)));
-    } else if (line.match(/^.+map:$/)) {
-      const map = line.match(/^(\w+)-to-(\w+).+$/);
-      if (map?.length !== 3) return; // invalid
-
-      const from = category;
-      const to = map[2];
-      category = map[1];
-      maps[category] = new Filter(to, from);
-    } else {
-      const numbers = line.match(/\d+/g)?.map((num) => parseInt(num));
-      if (numbers?.length !== 3) return; // invalid
-
-      const src = numbers[1];
-      const dest = numbers[0];
-      const range = numbers[2];
-      maps[category].srcs.push(src);
-      maps[category].dests.push(dest);
-      maps[category].ranges.push(range);
-      maps[category].offsets.push(dest - src);
-    }
-  });
-
-  return locationFromSeed(seeds, maps);
-}
-
 function part2(input: string[]): number {
-  const seeds: SeedRange[] = [];
-  const maps: FilterMap = {};
-  let category: string;
-
-  input.forEach((line) => {
-    if (!line) return; // skip empty lines
-
-    if (line.match(/^seeds:.+$/)) {
-      line.match(/\d+\s+\d+/g)?.map((num) => {
-        const split = num.split(/\s+/);
+  let seeds: Range[] = [];
+  const filters: Filter[] = [];
+  input.forEach((chunk) => {
+    // slice(1) each chunk to remove the header row
+    if (chunk.match(/^seeds:.+$/)) {
+      seeds = chunk.match(/\d+\s+\d+/g)!.map((s) => {
+        const split = s.split(/\s+/);
         const start = parseInt(split[0]);
-        const length = parseInt(split[1]) - 1;
-        seeds.push({ start: start, length: length });
+        const length = parseInt(split[1]);
+        return [start, start + length];
       });
-    } else if (line.match(/^.+map:$/)) {
-      const map = line.match(/^(\w+)-to-(\w+).+$/);
-      if (map?.length !== 3) return; // invalid
-
-      const from = category;
-      const to = map[2];
-      category = map[1];
-      maps[category] = new Filter(to, from);
-    } else {
-      const numbers = line.match(/\d+/g)?.map((num) => parseInt(num));
-      if (numbers?.length !== 3) return; // invalid
-
-      const src = numbers[1];
-      const dest = numbers[0];
-      const range = numbers[2];
-      maps[category].srcs.push(src);
-      maps[category].dests.push(dest);
-      maps[category].ranges.push(range);
-      maps[category].offsets.push(dest - src);
+    } else if (chunk.match(/^.+map:/)) {
+      filters.push(new Filter(chunk.split(/\r?\n/).slice(1)));
     }
   });
 
-  return seedFromLocation(seeds, maps);
+  const locations: number[] = [];
+  seeds.forEach((seed) => {
+    // running list of seed ranges to be processed
+    let ranges: Range[] = [seed];
+    filters.forEach((fn) => {
+      ranges = fn.map_range(ranges);
+    });
+
+    // get minimum location for this seed range
+    locations.push(Math.min(...ranges.map((r) => r[0])));
+  });
+  return Math.min(...locations);
 }
 
-const stdin: string[] = fs.readFileSync(0).toString().split(/\r?\n/);
+const stdin: string[] = fs
+  .readFileSync(0)
+  .toString()
+  .trim()
+  .split(/\r?\n\r?\n/); // read chunks
 const tstart: bigint = process.hrtime.bigint();
 const p1: number = part1(stdin);
 const tpart: bigint = process.hrtime.bigint();
