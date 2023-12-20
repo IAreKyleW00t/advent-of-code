@@ -1,10 +1,72 @@
 import * as fs from "fs";
 
 type Operation = "<" | ">";
+type Range = [number, number]; // [start, end]
 
 interface Category {
   name: string;
   value: number;
+}
+
+class PartRange {
+  x: Range;
+  m: Range;
+  a: Range;
+  s: Range;
+
+  constructor(x: Range, m: Range, a: Range, s: Range) {
+    this.x = x;
+    this.m = m;
+    this.a = a;
+    this.s = s;
+  }
+
+  split(op: Operation, value: number, range: Range): Range[] {
+    if (op === ">") {
+      return [
+        [Math.max(range[0], value + 1), range[1]], // accepted
+        [range[0], Math.min(range[1], value)], // rejected
+      ];
+    } else if (op === "<") {
+      return [
+        [range[0], Math.min(range[1], value - 1)], // accepted
+        [Math.max(range[0], value), range[1]], // rejected
+      ];
+    }
+    return [range];
+  }
+
+  split_by(category: Category, op: Operation): PartRange[] {
+    const ranges: PartRange[] = [];
+    const name: string = category.name;
+    if (name === "x") {
+      return this.split(op, category.value, this.x).map((r) => {
+        return new PartRange(r, this.m, this.a, this.s);
+      });
+    } else if (name === "m") {
+      return this.split(op, category.value, this.m).map((r) => {
+        return new PartRange(this.x, r, this.a, this.s);
+      });
+    } else if (name === "a") {
+      return this.split(op, category.value, this.a).map((r) => {
+        return new PartRange(this.x, this.m, r, this.s);
+      });
+    } else if (name === "s") {
+      return this.split(op, category.value, this.s).map((r) => {
+        return new PartRange(this.x, this.m, this.a, r);
+      });
+    }
+    return ranges;
+  }
+
+  score(): number {
+    return (
+      (this.x[1] - this.x[0] + 1) *
+      (this.m[1] - this.m[0] + 1) *
+      (this.a[1] - this.a[0] + 1) *
+      (this.s[1] - this.s[0] + 1)
+    );
+  }
 }
 
 class Part {
@@ -47,14 +109,27 @@ class Rule {
   }
 
   process(part: Part): boolean {
-    for (let i = 0; i < part.categories.length; i++) {
-      const rule: Category = part.categories[i];
-      if (this.category!.name !== rule.name) continue;
+    // if this rule is a catch-all it will accept anything
+    if (this.isEnd()) return true;
 
-      if (this.op === ">") return rule.value > this.category!.value;
-      else if (this.op === "<") return rule.value < this.category!.value;
-    }
-    return false;
+    // test the part against this rule, if it applies to it
+    const category = part.categories.find(
+      (c) => c.name === this.category!.name
+    );
+    if (!category) return false;
+
+    if (this.op === ">") return category.value > this.category!.value;
+    else if (this.op === "<") return category.value < this.category!.value;
+    else return false; // invalid
+  }
+
+  // [start               end]
+  // [  accepted  ][ rejected]
+  // rejected could be before/after, but the idea still holds
+  process_range(pr: PartRange): PartRange[] {
+    // if this rule is a catch-all it will accept the whole range
+    if (this.isEnd()) return [pr];
+    return pr.split_by(this.category!, this.op!).map((r) => r);
   }
 }
 
@@ -72,17 +147,27 @@ class State {
   }
 
   process(part: Part): string {
-    // run the part through each rule until we
-    // hit one that is valid, otherwise this is invalid
+    // run the part through each rule until we hit one that is valid
     for (let i = 0; i < this.rules.length; i++) {
       const rule: Rule = this.rules[i];
-      // if this is an end state then it will accept anything
-      if (rule.isEnd()) return rule.state;
-
-      // otherwise actually check the rule
       if (rule.process(part)) return rule.state;
     }
-    return "R";
+    return "R"; // invalid
+  }
+
+  process_range(pr: PartRange): [string, PartRange][] {
+    const ranges: [string, PartRange][] = [];
+    let current: PartRange = pr;
+    this.rules.forEach((rule) => {
+      // will always get up to 2 results back,
+      // accepted ranges and possibly ranges that may not be accepted
+      const nranges: PartRange[] = rule.process_range(current);
+      ranges.push([rule.state, nranges[0]]);
+
+      if (nranges.length > 1) current = nranges[1];
+      else return; // no more
+    });
+    return ranges;
   }
 }
 
@@ -93,40 +178,73 @@ function processPart(
 ): number {
   let current: string = start;
   while (current) {
-    const state = states.get(current);
-    if (!state) return 0; // invalid
-
-    // process part and then check if we're
-    // at an Accepted or Rejected state
-    current = state.process(part);
+    // check if we're at an Accepted or Rejected state
     if (current === "A") return part.sum();
     else if (current === "R") return 0;
+
+    // ignore invalid states
+    const state = states.get(current);
+    if (!state) return 0;
+
+    current = state.process(part);
   }
   return 0; // invalid
 }
 
-function part1(input: string[]): number {
+function processPartRange(
+  states: Map<string, State>,
+  pr: PartRange,
+  start: string = "in"
+): number {
+  let total: number = 0;
+
+  // hold a running list of part ranges and the
+  // state they are in
+  const queue: [string, PartRange][] = [[start, pr]];
+  while (queue.length > 0) {
+    const current: [string, PartRange] = queue.pop()!;
+    // check if we're at an Accepted or Rejected state
+    if (current[0] === "A") {
+      total += current[1].score();
+      continue;
+    } else if (current[0] === "R") continue;
+
+    // ignore invalid states
+    const state = states.get(current[0]);
+    if (!state) continue;
+
+    // process part range and add any new parts to the queue
+    const p = state.process_range(current[1]);
+    queue.push(...p);
+  }
+  return total;
+}
+
+function part1(chunk: string[]): number {
   const states: Map<string, State> = new Map<string, State>();
-  input[0].split(/\r?\n/).forEach((line) => {
-    const s: State = new State(line);
-    states.set(s.name, s);
+  chunk[0].split(/\r?\n/).forEach((line) => {
+    const state: State = new State(line);
+    states.set(state.name, state);
   });
 
   let total: number = 0;
-  input[1].split(/\r?\n/).forEach((line) => {
+  chunk[1].split(/\r?\n/).forEach((line) => {
     total += processPart(states, new Part(line));
   });
   return total;
 }
 
-function part2(input: string[]): number {
+function part2(chunk: string[]): number {
   const states: Map<string, State> = new Map<string, State>();
-  input[0].split(/\r?\n/).forEach((line) => {
-    const s: State = new State(line);
-    states.set(s.name, s);
+  chunk[0].split(/\r?\n/).forEach((line) => {
+    const state: State = new State(line);
+    states.set(state.name, state);
   });
 
-  return 0;
+  return processPartRange(
+    states,
+    new PartRange([1, 4000], [1, 4000], [1, 4000], [1, 4000])
+  );
 }
 
 const stdin: string[] = fs

@@ -1,4 +1,4 @@
-# Day 19 ${\color{yellow}★\color{gray}★}$
+# Day 19 ${\color{yellow}★★}$
 
 https://adventofcode.com/2023/day/19
 
