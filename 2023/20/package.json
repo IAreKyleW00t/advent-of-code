@@ -1,0 +1,20 @@
+{
+  "name": "pulse-propagation",
+  "version": "1.0.0",
+  "scripts": {
+    "lint": "npx eslint .",
+    "build": "npx tsc",
+    "clean": "npx tsc --build --clean",
+    "start": "npx tsx index.ts"
+  },
+  "author": "Kyle Colantonio",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "eslint": "^8.54.0",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.2"
+  }
+}
