@@ -74,7 +74,9 @@ function walk(grid: Grid, start: Coordinate, steps: number): number {
         else visited.add(key);
 
         // track alternating steps
-        if (next % 2 === 0) plots++;
+        // if the steps is odd, then we only track odd plots
+        // if the steps is even, then we only track even plots
+        if (next % 2 === steps % 2) plots++;
 
         queue.push([p, next]);
       });
