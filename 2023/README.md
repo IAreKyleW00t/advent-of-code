@@ -23,7 +23,7 @@ https://adventofcode.com/2023
 | [17](./2023/17) |       ${\color{yellow}★★}$       | TypeScript |
 | [18](./2023/18) |       ${\color{yellow}★★}$       | TypeScript |
 | [19](./2023/19) |       ${\color{yellow}★★}$       | TypeScript |
-| [20](./2023/20) | ${\color{yellow}★\color{gray}★}$ | TypeScript |
+| [20](./2023/20) |       ${\color{yellow}★★}$       | TypeScript |
 | [21](./2023/21) | ${\color{yellow}★\color{gray}★}$ | TypeScript |
 |       22        |        ${\color{gray}★★}$        |            |
 |       23        |        ${\color{gray}★★}$        |            |
