@@ -26,6 +26,6 @@ https://adventofcode.com/2023
 | [20](./2023/20) |       ${\color{yellow}★★}$       | TypeScript |
 | [21](./2023/21) | ${\color{yellow}★\color{gray}★}$ | TypeScript |
 | [22](./2023/22) |        ${\color{gray}★★}$        | TypeScript |
-|       23        |        ${\color{gray}★★}$        |            |
+| [23](./2023/23) | ${\color{yellow}★\color{gray}★}$ | TypeScript |
 |       24        |        ${\color{gray}★★}$        |            |
 |       25        |        ${\color{gray}★★}$        |            |
