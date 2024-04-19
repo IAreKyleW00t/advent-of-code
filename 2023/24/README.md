@@ -1,4 +1,4 @@
-# Day 24 ${\color{yellow}★★}$
+# Day 24 ${\color{gray}★★}$
 
 https://adventofcode.com/2023/day/24
 
