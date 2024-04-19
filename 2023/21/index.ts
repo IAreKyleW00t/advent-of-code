@@ -25,6 +25,10 @@ class Direction {
     return [a[0] + b[0], a[1] + b[1]];
   }
 
+  static normalize(a: Coordinate): Coordinate {
+    return [Math.sign(a[0]), Math.sign(a[1])];
+  }
+
   static adjacent(a: Coordinate): Coordinate[] {
     return Direction.all().map((d) => Direction.add(a, d));
   }
@@ -42,8 +46,19 @@ class Direction {
 // since Coordinates are small numbers, we encode them into a single
 // bigger number to index with. As numbers get larger, the width allocated
 // to each can be increased to prevent information loss.
-function hash(coord: Coordinate, w: number = 8): number {
-  return (coord[0] << w) | coord[1];
+function hash(coord: Coordinate): number {
+  return (coord[0] << 8) | coord[1];
+}
+
+function puhash(coord: Coordinate, pu: Coordinate): number {
+  return (coord[0] << 24) | (coord[1] << 16) | (pu[0] << 8) | pu[1];
+}
+
+interface Step {
+  coords: Coordinate;
+  from: Coordinate;
+  pu: Coordinate;
+  steps: number;
 }
 
 function walk(grid: Grid, start: Coordinate, steps: number): number {
@@ -51,25 +66,34 @@ function walk(grid: Grid, start: Coordinate, steps: number): number {
   let plots: number = 0;
 
   // [Coordinate, distance]
-  const queue: [Coordinate, number][] = [[start, 0]];
+  const queue: Step[] = [{ coords: start, pu: [0, 0], from: [0, 0], steps: 0 }];
   while (queue.length > 0) {
-    const step: [Coordinate, number] = queue.shift()!;
-    const current: Coordinate = step[0];
+    const step: Step = queue.shift()!;
+    const current: Coordinate = step.coords;
+    let pu: Coordinate = step.pu;
 
     // handle each neighboring plot only if it would
     // stay within the required step count.
-    const next: number = step[1] + 1;
+    const next: number = step.steps + 1;
     if (next <= steps) {
-      Direction.adjacent(current).forEach((p) => {
-        // skip invalid plots
-        if (!Direction.valid(grid, p)) return;
+      Direction.all().forEach((d) => {
+        let p: Coordinate = Direction.add(current, d);
+        // new universe
+        if (!Direction.valid(grid, p)) {
+          pu = Direction.add(pu, d);
+          if (pu == step.from) return;
+          if (p[0] > grid[0].length - 1) p = [0, p[1]];
+          if (p[0] < 0) p = [grid[0].length - 1, p[1]];
+          if (p[1] > grid.length - 1) p = [p[0], 0];
+          if (p[1] < 0) p = [p[0], grid.length - 1];
+        }
 
         // skip rocks
         if (grid[p[1]][p[0]] === "#") return;
 
         // be proactive and don't queue plots we've
         // already been too; cuts the runtime by about half.
-        const key: number = hash(p);
+        const key: number = puhash(p, pu);
         if (visited.has(key)) return;
         else visited.add(key);
 
@@ -78,7 +102,7 @@ function walk(grid: Grid, start: Coordinate, steps: number): number {
         // if the steps is even, then we only track even plots
         if (next % 2 === steps % 2) plots++;
 
-        queue.push([p, next]);
+        queue.push({ coords: p, pu: pu, from: step.pu, steps: next });
       });
     }
   }
