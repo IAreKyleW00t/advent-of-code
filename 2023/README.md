@@ -3,7 +3,7 @@
 https://adventofcode.com/2023
 
 |    Day     |              Stars               | Language   |
-| :--------: | :------------------------------: | ---------- | -------- |
+| :--------: | :------------------------------: | ---------- |
 | [1](./01)  |       ${\color{yellow}★★}$       | TypeScript |
 | [2](./02)  |       ${\color{yellow}★★}$       | TypeScript |
 | [3](./03)  |       ${\color{yellow}★★}$       | TypeScript |
@@ -12,7 +12,7 @@ https://adventofcode.com/2023
 | [6](./06)  |       ${\color{yellow}★★}$       | TypeScript |
 | [7](./07)  |       ${\color{yellow}★★}$       | TypeScript |
 | [8](./08)  |       ${\color{yellow}★★}$       | TypeScript |
-| [9](./09)  |       ${\color{yellow}★★}$       | TypeScript | \*\*\*\* |
+| [9](./09)  |       ${\color{yellow}★★}$       | TypeScript |
 | [10](./10) |       ${\color{yellow}★★}$       | TypeScript |
 | [11](./11) |       ${\color{yellow}★★}$       | TypeScript |
 | [12](./12) |       ${\color{yellow}★★}$       | TypeScript |
