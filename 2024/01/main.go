@@ -13,26 +13,31 @@ import (
 
 func main() {
 	log.SetOutput(os.Stdout) // Log to stdout instead of stderr
-	inputs := GetInputs()
+	inputs := GetInputData(os.Stdin)
 
 	p1 := time.Now()
-	log.Printf("Part 1 = %d", Part1(inputs))
-	log.Println(time.Since(p1).String())
+	log.Printf("Part 1: %d (%s)", Part1(inputs), time.Since(p1))
 
 	p2 := time.Now()
-	log.Printf("Part 2 = %d", Part2(inputs))
-	log.Println(time.Since(p2).String())
-
+	log.Printf("Part 2: %d (%s)", Part2(inputs), time.Since(p2))
 }
 
-// Utility function to read entire input files into memory
-func GetInputs() []string {
+// Utility function to read entire input file
+func GetInputData(file *os.File) []string {
 	lines := []string{}
-	stdin := bufio.NewScanner(os.Stdin)
-	for stdin.Scan() {
-		lines = append(lines, stdin.Text())
+	input := bufio.NewScanner(file)
+	for input.Scan() {
+		lines = append(lines, input.Text())
 	}
 	return lines
+}
+
+func ParseInt(a string) int {
+	i, err := strconv.Atoi(a)
+	if err != nil {
+		panic(err)
+	}
+	return i
 }
 
 func Part1(inputs []string) int {
@@ -40,18 +45,8 @@ func Part1(inputs []string) int {
 	right := []int{}
 	for _, line := range inputs {
 		fields := strings.Fields(line)
-
-		i, err := strconv.Atoi(fields[0])
-		if err != nil {
-			panic(err)
-		}
-		left = append(left, i)
-
-		i, err = strconv.Atoi(fields[1])
-		if err != nil {
-			panic(err)
-		}
-		right = append(right, i)
+		left = append(left, ParseInt(fields[0]))
+		right = append(right, ParseInt(fields[1]))
 	}
 
 	// Sort both sides so all numbers are lowest -> highest
@@ -72,20 +67,11 @@ func Part2(inputs []string) int {
 	heatmap := make(map[int]int)
 	for _, line := range inputs {
 		fields := strings.Fields(line)
-
-		i, err := strconv.Atoi(fields[0])
-		if err != nil {
-			panic(err)
-		}
-		left = append(left, i)
-
-		i, err = strconv.Atoi(fields[1])
-		if err != nil {
-			panic(err)
-		}
+		left = append(left, ParseInt(fields[0]))
+		right := ParseInt(fields[1])
 
 		// Keep track of number of occurrences for right side numbers
-		heatmap[i] = heatmap[i] + 1
+		heatmap[right] = heatmap[right] + 1
 	}
 
 	total := 0
