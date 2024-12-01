@@ -88,9 +88,9 @@ func Part2(inputs []string) int {
 		heatmap[i] = heatmap[i] + 1
 	}
 
-	sum := 0
+	total := 0
 	for i := range left {
-		sum += int(math.Abs(float64(left[i] * heatmap[left[i]])))
+		total += left[i] * heatmap[left[i]]
 	}
-	return sum
+	return total
 }
