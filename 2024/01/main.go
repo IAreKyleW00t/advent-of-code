@@ -50,8 +50,8 @@ func Part1(inputs []string) int {
 	}
 
 	// Sort both sides so all numbers are lowest -> highest
-	// In this case, it is faster to bulk sort the entire array at once vs
-	// sorting them as they are inserted.
+	// In this case, it is faster to bulk sort the entire array vs
+	// inserting the numbers in order as they are parsed.
 	sort.Ints(left)
 	sort.Ints(right)
 
