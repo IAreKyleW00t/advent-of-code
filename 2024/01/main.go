@@ -32,6 +32,7 @@ func GetInputData(file *os.File) []string {
 	return lines
 }
 
+// Utility function to (safely) parse int from string
 func ParseInt(a string) int {
 	i, err := strconv.Atoi(a)
 	if err != nil {
