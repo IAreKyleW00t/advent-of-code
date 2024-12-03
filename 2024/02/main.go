@@ -57,7 +57,7 @@ func CheckNumbers(numbers []int, min int, max int) bool {
 			if dec {
 				return false
 			}
-		} else if diff > 0 { // Dreasing
+		} else if diff > 0 { // Dreceasing
 			dec = true
 			if inc {
 				return false
@@ -100,7 +100,7 @@ func Part2(inputs []string) int {
 			// Not the best approach, but simple and easy to use with my Part 1 solution.
 			for i := range numbers {
 				// Create a copy of the list in memory so we don't mangle it
-				// after each iteration.
+				// after each iteration (???)
 				clone := make([]int, len(numbers))
 				copy(clone, numbers)
 
@@ -113,6 +113,7 @@ func Part2(inputs []string) int {
 				}
 			}
 		} else {
+			// Original list was already safe
 			total++
 		}
 	}
