@@ -57,59 +57,67 @@ func SearchWord(x int, y int, graph []string) int {
 
 	// Check every cardinal and intercardinal direction for possible XMAS matches.
 	// We can be clever about this by multiplying by 1/-1 to change the direction
-	// that is being checked.
-	// This is essentially the same speed as "unrolling" the loops yourself, but
-	// this logic is a lot cleaner (imo).
+	// that is being checked. This is essentially the same speed as "unrolling"
+	// the loops yourself, but this logic is a lot cleaner (imo).
+	//
+	// To be efficient with memory/cache thrashing and reduce array operations we
+	// cram the 4 bytes that we are checking against into an integer by
+	// bitshifting it into it. This is a small bit faster than dealing with array,
+	// especially zero'ing it out after each check.
+	//
+	// 1396788568 is the magic integer number for XMAS.
+	// 01011000 01001101 01000001 01010011
+	//     X       M        A        S
 	for _, i := range []int{1, -1} {
 		// left/right
-		buffer := []byte{0, 0, 0, 0}
+		buffer := 0
 		for j := range 4 {
 			// Don't go out of bounds
 			if x+(j*i) < 0 || x+(j*i) >= maxX {
 				break
 			}
-			buffer[j] = graph[y][x+(j*i)]
+			buffer |= int(graph[y][x+(j*i)]) << (8 * j)
 		}
-		if string(buffer) == "XMAS" {
+		if buffer == 1396788568 {
 			matches++
 		}
 
 		// up/down
-		buffer = []byte{0, 0, 0, 0}
+		buffer = 0
 		for j := range 4 {
 			// Don't go out of bounds
 			if y+(j*i) < 0 || y+(j*i) >= maxY {
 				break
 			}
-			buffer[j] = graph[y+(j*i)][x]
+			buffer |= int(graph[y+(j*i)][x]) << (8 * j)
 		}
-		if string(buffer) == "XMAS" {
+		if buffer == 1396788568 {
 			matches++
 		}
 
 		// up-left/down-right
-		buffer = []byte{0, 0, 0, 0}
+		buffer = 0
 		for j := range 4 {
 			// Don't go out of bounds
 			if x+(j*i) < 0 || x+(j*i) >= maxX || y+(j*i) < 0 || y+(j*i) >= maxY {
 				break
 			}
-			buffer[j] = graph[y+(j*i)][x+(j*i)]
+			buffer |= int(graph[y+(j*i)][x+(j*i)]) << (8 * j)
 		}
-		if string(buffer) == "XMAS" {
+		if buffer == 1396788568 {
 			matches++
 		}
 
 		// down-left/up-right
-		buffer = []byte{0, 0, 0, 0}
+		buffer = 0
 		for j := range 4 {
 			// Don't go out of bounds
 			if x+(j*i) < 0 || x+(j*i) >= maxX || y-(j*i) < 0 || y-(j*i) >= maxY {
 				break
 			}
-			buffer[j] = graph[y-(j*i)][x+(j*i)]
+			buffer |= int(graph[y-(j*i)][x+(j*i)]) << (8 * j)
 		}
-		if string(buffer) == "XMAS" {
+		if buffer == 1396788568 {
 			matches++
 		}
 	}
