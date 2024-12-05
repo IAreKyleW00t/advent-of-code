@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"log"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -27,27 +26,6 @@ func GetInputData(file *os.File) []string {
 		lines = append(lines, scanner.Text())
 	}
 	return lines
-}
-
-// Utility function to (safely) parse int from string
-func ParseInt(a string) int {
-	num, err := strconv.Atoi(a)
-	if err != nil {
-		panic(err)
-	}
-	return num
-}
-
-func WordToInt(word string) int {
-	sum := 0
-	for _, c := range word {
-		sum += int(c)
-	}
-	return sum
-}
-
-func IsXmas(bytes []byte) bool {
-	return string(bytes) == "XMAS"
 }
 
 func SearchWord(x int, y int, graph []string) int {
