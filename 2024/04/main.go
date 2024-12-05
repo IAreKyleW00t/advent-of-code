@@ -56,102 +56,62 @@ func SearchWord(x int, y int, graph []string) int {
 	matches := 0
 
 	// Check every cardinal and intercardinal direction for possible XMAS matches.
-	// This could be a lot cleaner by multiplying 1,-1 for directions, but it works.
-
-	// left
-	buffer := []byte{0, 0, 0, 0}
-	for i := range 4 {
-		if x-i < 0 {
-			break
+	// We can be clever about this by multiplying by 1/-1 to change the direction
+	// that is being checked.
+	// This is essentially the same speed as "unrolling" the loops yourself, but
+	// this logic is a lot cleaner (imo).
+	for _, i := range []int{1, -1} {
+		// left/right
+		buffer := []byte{0, 0, 0, 0}
+		for j := range 4 {
+			// Don't go out of bounds
+			if x+(j*i) < 0 || x+(j*i) >= maxX {
+				break
+			}
+			buffer[j] = graph[y][x+(j*i)]
 		}
-		buffer[i] = graph[y][x-i]
-	}
-	if IsXmas(buffer) {
-		matches++
-	}
-
-	// right
-	buffer = []byte{0, 0, 0, 0}
-	for i := range 4 {
-		if x+i >= maxX {
-			break
+		if string(buffer) == "XMAS" {
+			matches++
 		}
-		buffer[i] = graph[y][x+i]
-	}
-	if IsXmas(buffer) {
-		matches++
-	}
 
-	// up
-	buffer = []byte{0, 0, 0, 0}
-	for i := range 4 {
-		if y-i < 0 {
-			break
+		// up/down
+		buffer = []byte{0, 0, 0, 0}
+		for j := range 4 {
+			// Don't go out of bounds
+			if y+(j*i) < 0 || y+(j*i) >= maxY {
+				break
+			}
+			buffer[j] = graph[y+(j*i)][x]
 		}
-		buffer[i] = graph[y-i][x]
-	}
-	if IsXmas(buffer) {
-		matches++
-	}
+		if string(buffer) == "XMAS" {
+			matches++
+		}
 
-	// down
-	buffer = []byte{0, 0, 0, 0}
-	for i := range 4 {
-		if y+i >= maxY {
-			break
+		// up-left/down-right
+		buffer = []byte{0, 0, 0, 0}
+		for j := range 4 {
+			// Don't go out of bounds
+			if x+(j*i) < 0 || x+(j*i) >= maxX || y+(j*i) < 0 || y+(j*i) >= maxY {
+				break
+			}
+			buffer[j] = graph[y+(j*i)][x+(j*i)]
 		}
-		buffer[i] = graph[y+i][x]
-	}
-	if IsXmas(buffer) {
-		matches++
-	}
+		if string(buffer) == "XMAS" {
+			matches++
+		}
 
-	// up-left
-	buffer = []byte{0, 0, 0, 0}
-	for i := range 4 {
-		if x-i < 0 || y-i < 0 {
-			break
+		// down-left/up-right
+		buffer = []byte{0, 0, 0, 0}
+		for j := range 4 {
+			// Don't go out of bounds
+			if x+(j*i) < 0 || x+(j*i) >= maxX || y-(j*i) < 0 || y-(j*i) >= maxY {
+				break
+			}
+			buffer[j] = graph[y-(j*i)][x+(j*i)]
 		}
-		buffer[i] = graph[y-i][x-i]
-	}
-	if IsXmas(buffer) {
-		matches++
-	}
-
-	// up-right
-	buffer = []byte{0, 0, 0, 0}
-	for i := range 4 {
-		if x+i >= maxX || y-i < 0 {
-			break
+		if string(buffer) == "XMAS" {
+			matches++
 		}
-		buffer[i] = graph[y-i][x+i]
-	}
-	if IsXmas(buffer) {
-		matches++
-	}
-
-	// down-left
-	buffer = []byte{0, 0, 0, 0}
-	for i := range 4 {
-		if x-i < 0 || y+i >= maxY {
-			break
-		}
-		buffer[i] = graph[y+i][x-i]
-	}
-	if IsXmas(buffer) {
-		matches++
-	}
-
-	// down-right
-	buffer = []byte{0, 0, 0, 0}
-	for i := range 4 {
-		if x+i >= maxX || y+i >= maxY {
-			break
-		}
-		buffer[i] = graph[y+i][x+i]
-	}
-	if IsXmas(buffer) {
-		matches++
 	}
 	return matches
 }
@@ -159,30 +119,24 @@ func SearchWord(x int, y int, graph []string) int {
 func SearchCrossWord(x int, y int, graph []string) int {
 	maxY := len(graph)
 	maxX := len(graph[0])
-	matches := 0
 
-	// On the edge, not valid
+	// 'A' is on an edge, which is immediately invalid
 	if x == 0 || x == maxX-1 || y == 0 || y == maxY-1 {
-		return 0
-	}
-
-	// Bottom edge, also not valid
-	if (x+1 >= maxX && y+1 >= maxY) || (x-1 < 0 || y-1 < 0) {
 		return 0
 	}
 
 	// We know that the corners of the X must be 2 M's and 2 S's,
 	// which has a total decimal value of 320. We can use this to know that
-	// We possibly have a match. The we can check if at least 1 side has 2
+	// we possibly have a match. Then we can check if at least 1 side has 2
 	// matching characters.
 	crossValue := int(graph[y-1][x-1]) + int(graph[y+1][x-1]) + int(graph[y-1][x+1]) + int(graph[y+1][x+1])
 	if crossValue == 320 {
 		if graph[y-1][x-1] == graph[y-1][x+1] || graph[y-1][x-1] == graph[y+1][x-1] {
-			matches++
+			return 1
 		}
 	}
 
-	return matches
+	return 0
 }
 
 func Part1(data []string) int {
