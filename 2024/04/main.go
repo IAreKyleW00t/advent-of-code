@@ -43,9 +43,10 @@ func SearchWord(x int, y int, graph []string) int {
 	// bitshifting it into it. This is a small bit faster than dealing with array,
 	// especially zero'ing it out after each check.
 	//
-	// 1396788568 is the magic integer number for XMAS.
-	// 01011000 01001101 01000001 01010011
-	//     X       M        A        S
+	// 1396788568 is the magic integer number for XMAS, which actually spells SAMX
+	// because we push data in from the right side of the integer.
+	// 01010011 01000001 01001101 01011000
+	//     S       A        M        X
 	for _, i := range []int{1, -1} {
 		// left/right
 		buffer := 0
