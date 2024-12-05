@@ -175,11 +175,6 @@ func SearchCrossWord(x int, y int, graph []string) int {
 	// which has a total decimal value of 320. We can use this to know that
 	// We possibly have a match. The we can check if at least 1 side has 2
 	// matching characters.
-	//
-	// Valid					Invalid
-	// M.S	M.M				M.S
-	// .A.	.A.	etc		.A.
-	// M.S	S.S				S.M
 	crossValue := int(graph[y-1][x-1]) + int(graph[y+1][x-1]) + int(graph[y-1][x+1]) + int(graph[y+1][x+1])
 	if crossValue == 320 {
 		if graph[y-1][x-1] == graph[y-1][x+1] || graph[y-1][x-1] == graph[y+1][x-1] {
