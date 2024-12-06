@@ -118,14 +118,16 @@ func Part2(updates [][]int, rules [][]int) int {
 		updated := false
 
 	pagesLoop:
-		// Loop over the pages in reverse, and label it so we can jump out of it when needed
-		for i := len(pages) - 1; i >= 0; i-- {
+		// Loop over the pages, and label it so we can jump out of it when needed
+		// This is essentially just bubble sort, but it's actually pretty fast, doesn't
+		// cause too many swap operations, and doesn't encounter any cycle issues.
+		for i := 0; i < len(pages)-1; i++ {
 			page := pages[i]
 
 			// Check page against each "rule"
 			for _, rule := range rules {
 				// Skip rules that don't apply to this page
-				if rule[0] != page {
+				if rule[1] != page {
 					continue
 				}
 
@@ -133,16 +135,16 @@ func Part2(updates [][]int, rules [][]int) int {
 				// If not, then it's ok. If it does, check if it appears before
 				// the page, which would break the rule. If so, move the page in front
 				// of it and re-check the pages again at the same position.
-				index := slices.Index(pages, rule[1])
-				if index == -1 || index >= i {
+				index := slices.Index(pages, rule[0])
+				if index == -1 || index < i {
 					continue
-				} else if index < i {
+				} else if index >= i {
 					updated = true
-					pages = moveElement(pages, i, index)
+					pages = moveElement(pages, index, i)
 
 					// Increase the page index counter so we "recheck" the pages at this
 					// point again for more breaking rules, after things have shifted around.
-					i++
+					i--
 					continue pagesLoop
 				}
 			}
