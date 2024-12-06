@@ -14,11 +14,16 @@ func main() {
 	log.SetOutput(os.Stdout) // Log to stdout instead of stderr
 	updates, rules := GetInputData(os.Stdin)
 
-	p1 := time.Now()
-	log.Printf("Part 1: %d (%s)", Part1(updates, rules), time.Since(p1))
+	p1Start := time.Now()
+	part1 := Part1(updates, rules)
+	p1End := time.Since(p1Start)
+	log.Printf("Part 1: %d (%s)", part1, p1End)
 
-	p2 := time.Now()
-	log.Printf("Part 2: %d (%s)", Part2(updates, rules), time.Since(p2))
+	p2Start := time.Now()
+	part2 := Part2(updates, rules)
+	p2End := time.Since(p2Start)
+	log.Printf("Part 2: %d (%s)", part2, p2End)
+	log.Printf("Total time: %s", p1End+p2End)
 }
 
 // Utility function to read entire input file
