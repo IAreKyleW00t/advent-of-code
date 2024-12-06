@@ -10,8 +10,8 @@ import (
 
 type Coordinate struct {
 	value rune
-	X int
-	Y int
+	X     int
+	Y     int
 }
 
 func main() {
@@ -59,55 +59,46 @@ func GetInputData(file *os.File) (Coordinate, []Coordinate, []int) {
 func FindNearestWall(pos Coordinate, walls []Coordinate) (Coordinate, bool) {
 	nearest := Coordinate{X: -1, Y: -1, value: '.'}
 
-	// Check each wall for ones that apply to the move
+	// Check each wall for ones that apply to the move, skipping those
+	// that are not in the path of the guard.
+	// We keep track of the nearest wall because that is the first one we will run
+	// into in that direction.
 	for _, wall := range walls {
 		if pos.value == '^' { // North
-			// Skip walls that don't apply
 			if wall.X != pos.X || wall.Y > pos.Y {
 				continue
 			}
-			
-			// If this is the first wall we've found, set it as the nearest.
-			// Otherwise check if this is closer and update as needed.
+
 			if nearest.value == '.' {
 				nearest = wall
 			} else if wall.Y > nearest.Y {
-					nearest = wall
+				nearest = wall
 			}
 		} else if pos.value == '>' { // East
-			// Skip walls that don't apply
 			if wall.Y != pos.Y || wall.X < pos.X {
 				continue
 			}
 
-			// If this is the first wall we've found, set it as the nearest.
-			// Otherwise check if this is closer and update as needed.
 			if nearest.value == '.' {
 				nearest = wall
 			} else if wall.X < nearest.X {
 				nearest = wall
 			}
 		} else if pos.value == 'v' { // South
-			// Skip walls that don't apply
 			if wall.X != pos.X || wall.Y < pos.Y {
 				continue
 			}
 
-			// If this is the first wall we've found, set it as the nearest.
-			// Otherwise check if this is closer and update as needed.
 			if nearest.value == '.' {
 				nearest = wall
-			} else if wall.Y <nearest.Y {
+			} else if wall.Y < nearest.Y {
 				nearest = wall
 			}
 		} else if pos.value == '<' { // West
-			// Skip walls that don't apply
 			if wall.Y != pos.Y || wall.X > pos.X {
 				continue
 			}
 
-			// If this is the first wall we've found, set it as the nearest.
-			// Otherwise check if this is closer and update as needed.
 			if nearest.value == '.' {
 				nearest = wall
 			} else if wall.X > nearest.X {
@@ -119,100 +110,105 @@ func FindNearestWall(pos Coordinate, walls []Coordinate) (Coordinate, bool) {
 	return nearest, nearest.value != '.'
 }
 
+func WalkToWall(pos *Coordinate, wall Coordinate, seen *[]int) {
+	if pos.value == '^' { // North
+		for i := wall.Y + 1; i < pos.Y; i++ {
+			coord := pos.X | i<<16
+			if !slices.Contains(*seen, coord) {
+				*seen = append(*seen, coord)
+			}
+		}
+
+		// Rotate 90
+		pos.value = '>'
+		pos.Y = wall.Y + 1
+	} else if pos.value == '>' { // East
+		for i := pos.X; i < wall.X; i++ {
+			coord := i | pos.Y<<16
+			if !slices.Contains(*seen, coord) {
+				*seen = append(*seen, coord)
+			}
+		}
+
+		// Rotate 90
+		pos.value = 'v'
+		pos.X = wall.X - 1
+	} else if pos.value == 'v' { // South
+		for i := pos.Y; i < wall.Y; i++ {
+			coord := pos.X | i<<16
+			if !slices.Contains(*seen, coord) {
+				*seen = append(*seen, coord)
+			}
+		}
+
+		// Rotate 90
+		pos.value = '<'
+		pos.Y = wall.Y - 1
+	} else if pos.value == '<' { // West
+		for i := wall.X + 1; i < pos.X; i++ {
+			coord := i | pos.Y<<16
+			if !slices.Contains(*seen, coord) {
+				*seen = append(*seen, coord)
+			}
+		}
+
+		// Rotate 90
+		pos.value = '^'
+		pos.X = wall.X + 1
+	}
+}
+
+func WalkToEdge(pos *Coordinate, maxX int, maxY int, seen *[]int) {
+	if pos.value == '^' { // North
+		for i := 0; i < pos.Y; i++ {
+			coord := pos.X | i<<16
+			if !slices.Contains(*seen, coord) {
+				*seen = append(*seen, coord)
+			}
+		}
+		pos.Y = 0 // Move to edge
+	} else if pos.value == '>' { // East
+		for i := pos.X; i < maxX; i++ {
+			coord := i | pos.Y<<16
+			if !slices.Contains(*seen, coord) {
+				*seen = append(*seen, coord)
+			}
+		}
+		pos.X = maxX - 1 // Move to edge
+	} else if pos.value == 'v' { // South
+		for i := pos.Y; i < maxY; i++ {
+			coord := pos.X | i<<16
+			if !slices.Contains(*seen, coord) {
+				*seen = append(*seen, coord)
+			}
+		}
+		pos.Y = maxY - 1 // Move to edge
+	} else if pos.value == '<' { // West
+		for i := 0; i < pos.X; i++ {
+			coord := i | pos.Y<<16
+			if !slices.Contains(*seen, coord) {
+				*seen = append(*seen, coord)
+			}
+		}
+		pos.X = 0 // Move to edge
+	}
+}
+
 func Part1(pos Coordinate, walls []Coordinate, size []int) int {
 	// We can cram the smaller X,Y coordinates into a single int
 	// with some bitshift, which is about 2x faster than using a struct.
-	seen := []int{pos.X | pos.Y << 16}
+	seen := []int{pos.X | pos.Y<<16}
 
 	for {
 		// If we found a wall then track the tiles we have not seen yet
 		// that are between the current position and the wall.
 		// If we don't find a wall, then we will walk to the edge of the map.
 		wall, found := FindNearestWall(pos, walls)
-		if pos.value == '^' { // North
-			if found {
-				for i := wall.Y+1; i < pos.Y; i++ {
-					s := pos.X | i << 16
-					if !slices.Contains(seen, s) {
-						seen = append(seen, s)
-					}
-				}
-				
-				// Rotate 90
-				pos.value = '>'
-				pos.Y = wall.Y+1
-			} else { // Edge
-				for i := 0; i < pos.Y; i++ {
-					s := pos.X | i << 16
-					if !slices.Contains(seen, s) {
-						seen = append(seen, s)
-					}
-				}
-				break
-			}
-		} else if pos.value == '>' { // East
-			if found {
-				for i := pos.X; i < wall.X; i++ {
-					s := i | pos.Y << 16
-					if !slices.Contains(seen, s) {
-						seen = append(seen, s)
-					}
-				}
-
-				// Rotate 90
-				pos.value = 'v'
-				pos.X = wall.X-1
-			} else { // Edge
-				for i := pos.X; i < size[0]; i++ {
-					s := i | pos.Y << 16
-					if !slices.Contains(seen, s) {
-						seen = append(seen, s)
-					}
-				}
-				break
-			}
-		} else if pos.value == 'v' { // South
-			if found {
-				for i := pos.Y; i < wall.Y; i++ {
-					s := pos.X | i << 16
-					if !slices.Contains(seen, s) {
-						seen = append(seen, s)
-					}
-				}
-
-				// Rotate 90
-				pos.value = '<'
-				pos.Y = wall.Y-1
-			} else { // Edge
-				for i := pos.Y; i < size[1]; i++ {
-					s := pos.X | i << 16
-					if !slices.Contains(seen, s) {
-						seen = append(seen, s)
-					}
-				}
-				break
-			}
-		} else if pos.value == '<' { // West
-			if found {
-				for i := wall.X+1; i < pos.X; i++ {
-					s := i | pos.Y << 16
-					if !slices.Contains(seen, s) {
-						seen = append(seen, s)
-					}
-				}
-
-				// Rotate 90
-				pos.value = '^'
-				pos.X = wall.X+1
-			} else { // Edge
-				for i := 0; i < pos.X; i++ {
-					s := i | pos.Y << 16
-					if !slices.Contains(seen, s) {
-						seen = append(seen, s)
-					}
-				}
-				break
-			}
+		if found {
+			WalkToWall(&pos, wall, &seen)
+		} else {
+			WalkToEdge(&pos, size[0], size[1], &seen)
+			break
 		}
 	}
 	return len(seen)
