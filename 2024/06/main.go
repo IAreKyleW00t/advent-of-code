@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"slices"
@@ -194,6 +195,38 @@ func WalkToEdge(pos *Coordinate, maxX int, maxY int, seen *[]int) {
 	}
 }
 
+func DirectionToInt(coord Coordinate) int {
+	switch coord.value {
+	case '^':
+		return 1
+	case '>':
+		return 2
+	case 'v':
+		return 3
+	case '<':
+		return 4
+	}
+	return 0
+}
+
+func PrintGraph(pos Coordinate, walls []Coordinate, size []int, loops []Coordinate) {
+	for i := 0; i < size[0]; i++ {
+		for j := 0; j < size[1]; j++ {
+			if slices.Contains(walls, Coordinate{X: j, Y: i, value: '#'}) {
+				fmt.Printf("#")
+			} else if slices.Contains(loops, Coordinate{X: j, Y: i, value: 'O'}) {
+				fmt.Printf("O")
+			} else if pos.X == j && pos.Y == i {
+				fmt.Printf("%s", string(pos.value))
+			} else {
+				fmt.Printf(".")
+			}
+		}
+		fmt.Println()
+	}
+	fmt.Println()
+}
+
 func Part1(pos Coordinate, walls []Coordinate, size []int) int {
 	// We can cram the smaller X,Y coordinates into a single int
 	// with some bitshift, which is about 2x faster than using a struct.
@@ -214,7 +247,172 @@ func Part1(pos Coordinate, walls []Coordinate, size []int) int {
 	return len(seen)
 }
 
-func Part2(start Coordinate, walls []Coordinate, size []int) int {
-	total := 0
-	return total
+func Part2(pos Coordinate, walls []Coordinate, size []int) int {
+	seen := []int{pos.X | pos.Y<<16}
+	hitWalls := []int{}
+	loops := []Coordinate{}
+
+	for {
+		// If we found a wall then track the tiles we have not seen yet
+		// that are between the current position and the wall.
+		// If we don't find a wall, then we will walk to the edge of the map.
+		wall, found := FindNearestWall(pos, walls)
+
+		// This works for the test input but is to LOW for the real one.
+		// The logic is similiar to Part 1, but while "walking" between walls we
+		// check if there is an adjacent wall to our right that we have hit before
+		// in the same direction, which would cause a loop to occur.
+		// There are probably other non-hit walls that could cause loops?
+		// Possibly better to check walked paths w/ direction to see if we enter the
+		// the same state?
+		if found {
+			hitWalls = append(hitWalls, DirectionToInt(pos)|wall.X<<8|wall.Y<<16)
+			if pos.value == '^' { // North
+				for i := wall.Y + 1; i < pos.Y; i++ {
+					loc := Coordinate{X: pos.X, Y: i, value: '>'}
+					w, f := FindNearestWall(loc, walls)
+					if f && slices.Contains(hitWalls, DirectionToInt(loc)|w.X<<8|w.Y<<16) {
+						loc.Y-- // Place wall in "front" of current location
+						log.Printf("Loop at [x=%d, y=%d]", loc.X, loc.Y)
+						loops = append(loops, Coordinate{X: loc.X, Y: loc.Y, value: 'O'})
+					}
+
+					coord := pos.X | i<<16
+					if !slices.Contains(seen, coord) {
+						seen = append(seen, coord)
+					}
+				}
+
+				// Rotate 90
+				pos.value = '>'
+				pos.Y = wall.Y + 1
+			} else if pos.value == '>' { // East
+				for i := pos.X; i < wall.X; i++ {
+					loc := Coordinate{X: i, Y: pos.Y, value: 'v'}
+					w, f := FindNearestWall(loc, walls)
+					if f && slices.Contains(hitWalls, DirectionToInt(loc)|w.X<<8|w.Y<<16) {
+						log.Printf("Loop at [x=%d, y=%d]", loc.X, loc.Y)
+						loc.X++ // Place wall in "front" of current location
+						loops = append(loops, Coordinate{X: loc.X, Y: loc.Y, value: 'O'})
+					}
+
+					coord := i | pos.Y<<16
+					if !slices.Contains(seen, coord) {
+						seen = append(seen, coord)
+					}
+				}
+
+				// Rotate 90
+				pos.value = 'v'
+				pos.X = wall.X - 1
+			} else if pos.value == 'v' { // South
+				for i := pos.Y; i < wall.Y; i++ {
+					loc := Coordinate{X: pos.X, Y: i, value: '<'}
+					w, f := FindNearestWall(loc, walls)
+					if f && slices.Contains(hitWalls, DirectionToInt(loc)|w.X<<8|w.Y<<16) {
+						loc.Y++ // Place wall in "front" of current location
+						log.Printf("Loop at [x=%d, y=%d]", loc.X, loc.Y)
+						loops = append(loops, Coordinate{X: loc.X, Y: loc.Y, value: 'O'})
+					}
+
+					coord := pos.X | i<<16
+					if !slices.Contains(seen, coord) {
+						seen = append(seen, coord)
+					}
+				}
+
+				// Rotate 90
+				pos.value = '<'
+				pos.Y = wall.Y - 1
+			} else if pos.value == '<' { // West
+				for i := wall.X + 1; i < pos.X; i++ {
+					loc := Coordinate{X: i, Y: pos.Y, value: '^'}
+					w, f := FindNearestWall(loc, walls)
+					if f && slices.Contains(hitWalls, DirectionToInt(loc)|w.X<<8|w.Y<<16) {
+						loc.X-- // Place wall in "front" of current location
+						log.Printf("Loop at [x=%d, y=%d]", loc.X, loc.Y)
+						loops = append(loops, Coordinate{X: loc.X, Y: loc.Y, value: 'O'})
+					}
+
+					coord := i | pos.Y<<16
+					if !slices.Contains(seen, coord) {
+						seen = append(seen, coord)
+					}
+				}
+
+				// Rotate 90
+				pos.value = '^'
+				pos.X = wall.X + 1
+			}
+		} else {
+			if pos.value == '^' { // North
+				for i := 0; i < pos.Y; i++ {
+					loc := Coordinate{X: pos.X, Y: i, value: '>'}
+					w, f := FindNearestWall(loc, walls)
+					if f && slices.Contains(hitWalls, DirectionToInt(loc)|w.X<<8|w.Y<<16) {
+						loc.Y-- // Place wall in "front" of current location
+						log.Printf("Loop at [x=%d, y=%d]", loc.X, loc.Y)
+						loops = append(loops, Coordinate{X: loc.X, Y: loc.Y, value: 'O'})
+					}
+
+					coord := pos.X | i<<16
+					if !slices.Contains(seen, coord) {
+						seen = append(seen, coord)
+					}
+				}
+				pos.Y = 0 // Move to edge
+			} else if pos.value == '>' { // East
+				for i := pos.X; i < size[0]; i++ {
+					loc := Coordinate{X: i, Y: pos.Y, value: 'v'}
+					w, f := FindNearestWall(loc, walls)
+					if f && slices.Contains(hitWalls, DirectionToInt(loc)|w.X<<8|w.Y<<16) {
+						loc.X++ // Place wall in "front" of current location
+						log.Printf("Loop at [x=%d, y=%d]", loc.X, loc.Y)
+						loops = append(loops, Coordinate{X: loc.X, Y: loc.Y, value: 'O'})
+					}
+
+					coord := i | pos.Y<<16
+					if !slices.Contains(seen, coord) {
+						seen = append(seen, coord)
+					}
+				}
+				pos.X = size[0] - 1 // Move to edge
+			} else if pos.value == 'v' { // South
+				for i := pos.Y; i < size[1]; i++ {
+					loc := Coordinate{X: pos.X, Y: i, value: '<'}
+					w, f := FindNearestWall(loc, walls)
+					if f && slices.Contains(hitWalls, DirectionToInt(loc)|w.X<<8|w.Y<<16) {
+						loc.Y++ // Place wall in "front" of current location
+						log.Printf("Loop at [x=%d, y=%d]", loc.X, loc.Y)
+						loops = append(loops, Coordinate{X: loc.X, Y: loc.Y, value: 'O'})
+					}
+
+					coord := pos.X | i<<16
+					if !slices.Contains(seen, coord) {
+						seen = append(seen, coord)
+					}
+				}
+				pos.Y = size[1] - 1 // Move to edge
+			} else if pos.value == '<' { // West
+				for i := 0; i < pos.X; i++ {
+					loc := Coordinate{X: i, Y: pos.Y, value: '^'}
+					w, f := FindNearestWall(loc, walls)
+					if f && slices.Contains(hitWalls, DirectionToInt(loc)|w.X<<8|w.Y<<16) {
+						loc.X-- // Place wall in "front" of current location
+						log.Printf("Loop at [x=%d, y=%d]", loc.X, loc.Y)
+						loops = append(loops, Coordinate{X: loc.X, Y: loc.Y, value: 'O'})
+					}
+
+					coord := i | pos.Y<<16
+					if !slices.Contains(seen, coord) {
+						seen = append(seen, coord)
+					}
+				}
+				pos.X = 0 // Move to edge
+			}
+			break
+		}
+	}
+	PrintGraph(pos, walls, size, loops)
+	return len(loops)
 }
